@@ -3,6 +3,7 @@
 //
 
 #include "parser.hpp"
+
 #include <spdlog/spdlog.h>
 
 namespace command {
@@ -93,7 +94,8 @@ ResultOption Parser::parse_bulk(const size_t start) {
     // the whole bulk string to the second CRLF.
     const size_t bulk_str_len = data_len + header_len + 2;
 
-    spdlog::debug("start: {}, buffer_size: {}, header_len: {}, data_len: {}, bulk_str_len: {}", start, buffer.size(), header_len, data_len, bulk_str_len);
+    spdlog::debug("start: {}, buffer_size: {}, header_len: {}, data_len: {}, bulk_str_len: {}",
+                  start, buffer.size(), header_len, data_len, bulk_str_len);
     if (start + bulk_str_len > buffer.size()) {
         return std::nullopt;
     }

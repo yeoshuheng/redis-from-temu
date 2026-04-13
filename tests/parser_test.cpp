@@ -2,10 +2,11 @@
 // Created by Yeo Shu Heng on 14/4/26.
 //
 
-#include <gtest/gtest.h>
-#include <cstring>
-
 #include "../command/parser.hpp"
+
+#include <gtest/gtest.h>
+
+#include <cstring>
 
 using namespace command;
 
@@ -17,11 +18,10 @@ TEST(ParserTest, BasicSet) {
     Parser parser;
 
     feed(parser,
-        "*3\r\n"
-        "$3\r\nSET\r\n"
-        "$3\r\nkey\r\n"
-        "$5\r\nvalue\r\n"
-    );
+         "*3\r\n"
+         "$3\r\nSET\r\n"
+         "$3\r\nkey\r\n"
+         "$5\r\nvalue\r\n");
 
     auto cmd_opt = parser.next_msg();
     ASSERT_TRUE(cmd_opt.has_value());
@@ -37,11 +37,9 @@ TEST(ParserTest, BasicSet) {
 TEST(ParserTest, PingCommand) {
     Parser parser;
 
-    feed(
-        parser,
-        "*1\r\n"
-        "$4\r\nPING\r\n"
-    );
+    feed(parser,
+         "*1\r\n"
+         "$4\r\nPING\r\n");
 
     auto cmd_opt = parser.next_msg();
     ASSERT_TRUE(cmd_opt.has_value());
@@ -55,16 +53,12 @@ TEST(ParserTest, PingCommand) {
 TEST(ParserTest, PartialFeed) {
     Parser parser;
 
-    feed(parser,
-        "*3\r\n$3\r\nSE"
-    );
+    feed(parser, "*3\r\n$3\r\nSE");
 
     // incomplete
     EXPECT_FALSE(parser.next_msg().has_value());
 
-    feed(parser,
-        "T\r\n$3\r\nkey\r\n$5\r\nvalue\r\n"
-    );
+    feed(parser, "T\r\n$3\r\nkey\r\n$5\r\nvalue\r\n");
 
     auto cmd_opt = parser.next_msg();
     ASSERT_TRUE(cmd_opt.has_value());
@@ -79,9 +73,8 @@ TEST(ParserTest, MultipleCommands) {
     Parser parser;
 
     feed(parser,
-        "*1\r\n$4\r\nPING\r\n"
-        "*2\r\n$3\r\nGET\r\n$3\r\nkey\r\n"
-    );
+         "*1\r\n$4\r\nPING\r\n"
+         "*2\r\n$3\r\nGET\r\n$3\r\nkey\r\n");
 
     auto c1 = parser.next_msg();
     auto c2 = parser.next_msg();
@@ -138,10 +131,9 @@ TEST(ParserTest, DrainMultipleMessages) {
     Parser parser;
 
     feed(parser,
-        "*1\r\n$4\r\nPING\r\n"
-        "*1\r\n$4\r\nPING\r\n"
-        "*1\r\n$4\r\nPING\r\n"
-    );
+         "*1\r\n$4\r\nPING\r\n"
+         "*1\r\n$4\r\nPING\r\n"
+         "*1\r\n$4\r\nPING\r\n");
 
     for (int i = 0; i < 3; i++) {
         auto cmd = parser.next_msg();
