@@ -3,6 +3,7 @@
 //
 
 #include "parser.hpp"
+#include <spdlog/spdlog.h>
 
 namespace command {
 constexpr char BULK_STR_START = '$';
@@ -14,16 +15,25 @@ void Parser::feed(const char* data, const size_t len) {
 }
 
 ParsedCommandOption Parser::next_msg() {
+    spdlog::debug("buffer: {} offset: {}", std::string(buffer.begin(), buffer.end()), offset);
     const ResultOption parsed_opt = parse_array(offset);
     if (!parsed_opt.has_value()) {
         return std::nullopt;
     }
     ParsedResult result = parsed_opt.value();
+    spdlog::debug("parsed result: consumed={}, size={}", result.consumed, result.value.size());
+
+    if (result.consumed == 0 || offset + result.consumed > buffer.size()) {
+        return std::nullopt;
+    }
     offset += result.consumed;
+
     if (offset >= BUFFER_CLEANUP_LIMIT) {
         buffer.erase(buffer.begin(), buffer.begin() + static_cast<long>(offset));
         offset = 0;
     }
+    spdlog::debug("offset updated: {}", offset);
+
     return build_command(result);
 }
 
@@ -43,18 +53,20 @@ ResultOption Parser::parse_array(const size_t start) {
     // array header in this case is *3\r\n
     const size_t array_len =
         std::stoi(std::string(buffer.begin() + start_long + 1, buffer.begin() + crlf_idx));
+    spdlog::debug("array_len: {}", array_len);
 
     size_t curr_position = crlf_idx + 1;
     std::vector<std::string> parsed_array;
     for (size_t i = 0; i < array_len;
          i++) {  // RESP2 arrays terminate based on elements parsed, not CRLF
-        if (curr_position >= buffer.size()) {
+        if (curr_position > buffer.size()) {
             return std::nullopt;
         }
         ResultOption bulk_str = parse_bulk(curr_position);
         if (!bulk_str.has_value()) {
             return std::nullopt;
         }
+        spdlog::debug("bulk_str parsed: {}", bulk_str.value().value[0]);
         parsed_array.push_back(bulk_str.value().value[0]);
         curr_position += bulk_str.value().consumed;
     }
@@ -76,11 +88,13 @@ ResultOption Parser::parse_bulk(const size_t start) {
         std::stoi(std::string(buffer.begin() + start_long + 1, buffer.begin() + crlf_idx));
 
     // header is: $2\r\n
-    const size_t header_len = (crlf_idx - start) + 2;
+    const size_t header_len = (crlf_idx - start) + 1;
 
     // the whole bulk string to the second CRLF.
     const size_t bulk_str_len = data_len + header_len + 2;
-    if (buffer.size() - start < bulk_str_len) {
+
+    spdlog::debug("start: {}, buffer_size: {}, header_len: {}, data_len: {}, bulk_str_len: {}", start, buffer.size(), header_len, data_len, bulk_str_len);
+    if (start + bulk_str_len > buffer.size()) {
         return std::nullopt;
     }
     const auto common_start = buffer.begin() + start_long + static_cast<long>(header_len);
