@@ -25,21 +25,22 @@ FetchContent_MakeAvailable(googletest)
 
 # set up for redis-cpp
 add_library(redis_cpp_lib
-    command/parser.cpp
+        command/parser.cpp
+        storage/lru_cache.cpp
 )
 
 target_include_directories(redis_cpp_lib PUBLIC
-    ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}
 )
 
 target_link_libraries(redis_cpp_lib PUBLIC spdlog::spdlog)
 
 add_executable(main
-    main.cpp
+        main.cpp
 )
 
 file (GLOB TEST_SOURCES
-    tests/*.cpp
+        tests/*.cpp
 )
 
 add_executable(redis_cpp_tests
