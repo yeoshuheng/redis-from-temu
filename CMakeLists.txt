@@ -4,18 +4,53 @@ project(redis-cpp)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SOURCES
+include(FetchContent)
+
+# set up for spdlog
+FetchContent_Declare(
+        spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG v1.14.1
+)
+FetchContent_MakeAvailable(spdlog)
+
+# set up for gtest
+FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+)
+
+set(gtest_force_shared_crt OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+# set up for redis-cpp
+add_library(redis_cpp_lib
     command/parser.cpp
 )
 
-set(HEADERS
-    command/parser.hpp
-    command/command.hpp
-    commons/utils.hpp
+target_include_directories(redis_cpp_lib PUBLIC
+    ${CMAKE_SOURCE_DIR}
 )
 
-add_executable(
-        main.cpp
-        command/parser.cpp
-        ${HEADERS}
+target_link_libraries(redis_cpp_lib PUBLIC spdlog::spdlog)
+
+add_executable(main
+    main.cpp
 )
+
+file (GLOB TEST_SOURCES
+    tests/*.cpp
+)
+
+add_executable(redis_cpp_tests
+        ${TEST_SOURCES}
+)
+
+target_link_libraries(redis_cpp_tests
+        PRIVATE
+        redis_cpp_lib
+        GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(redis_cpp_tests)
