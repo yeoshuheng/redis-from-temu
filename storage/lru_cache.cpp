@@ -3,3 +3,101 @@
 //
 
 #include "lru_cache.hpp"
+
+#include <format>
+
+namespace storage {
+template <typename K, typename V>
+LRUCache<K, V>::LRUCache(const size_t capacity)
+    : head(new Node()), tail(new Node()), capacity(capacity) {
+    head->next = tail;
+    tail->prev = head;
+};
+
+template <typename K, typename V>
+void LRUCache<K, V>::disconnect(n_ptr node) {
+    if (node == nullptr) {
+        return;
+    }
+    const auto n_prev = node->prev;
+    const auto n_next = node->next;
+    sanitise(node);
+    if (n_prev != nullptr) {
+        n_prev->next = n_next;
+    }
+    if (n_next != nullptr) {
+        n_next->prev = n_prev;
+    }
+};
+
+template <typename K, typename V>
+void LRUCache<K, V>::clear() {
+    while (cache.size() > capacity) {
+        const auto to_evict = head->next;
+        if (to_evict == tail) {
+            break;
+        }
+        cache.erase(to_evict->key);
+        disconnect(to_evict);
+        delete to_evict;
+    }
+}
+
+template <typename K, typename V>
+void LRUCache<K, V>::add_to_tail(n_ptr node) {
+    sanitise(node);
+    const auto t_prev = tail->prev;
+    t_prev->next = node;
+    node->prev = t_prev;
+    tail->prev = node;
+    node->next = tail;
+};
+
+template <typename K, typename V>
+void LRUCache<K, V>::sanitise(n_ptr node) {
+    if (node == nullptr) {
+        return;
+    }
+    node->prev = node->next = nullptr;
+};
+
+template <typename K, typename V>
+void LRUCache<K, V>::add(const K& key, const V& value) {
+    clear();
+    n_ptr node;
+    const auto it = cache.find(key);
+    if (it != cache.end()) {
+        node = it->second;
+        node->value = value;
+        disconnect(node);
+    } else {
+        node = new Node(key, value);
+        cache[key] = node;
+    }
+    add_to_tail(node);
+};
+
+template <typename K, typename V>
+V LRUCache<K, V>::get(const K& key) {
+    const auto it = cache.find(key);
+    if (it == cache.end()) {
+        throw std::runtime_error(std::format("unable to find node with key: {}", key));
+    }
+    const auto node = it->second;
+    disconnect(node);
+    add_to_tail(node);
+    return node->value;
+};
+
+template <typename K, typename V>
+void LRUCache<K, V>::remove(const K& key) {
+    const auto it = cache.find(key);
+    if (it == cache.end()) {
+        throw std::runtime_error(std::format("unable to find node with key: {}", key));
+    }
+    const auto node = it->second;
+    disconnect(node);
+    cache.erase(key);
+    delete node;
+};
+}  // namespace storage
