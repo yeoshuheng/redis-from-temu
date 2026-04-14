@@ -7,8 +7,10 @@
 
 #include <memory_resource>
 #include <unordered_map>
+#include <chrono>
 
 namespace storage {
+    using Clock = std::chrono::steady_clock;
 template <typename K, typename V>
 struct LRUNode {
     using n_ptr = LRUNode<K, V>*;
@@ -17,6 +19,7 @@ struct LRUNode {
     V value;
     n_ptr prev;
     n_ptr next;
+    std::optional<Clock::time_point> expired_t;
 
     LRUNode() : key(), value(), prev(nullptr), next(nullptr) {};
     LRUNode(K k, V v) : key(k), value(v), prev(nullptr), next(nullptr) {};
@@ -48,7 +51,7 @@ class LRUCache {
     ~LRUCache();
     LRUCache(const LRUCache&) = delete;
     LRUCache& operator=(const LRUCache&) = delete;
-    void add(const K& key, const V& value);
+    void add(const K& key, const V& value, uint8_t ttl_ms = 0);
     V& get(const K& key);
     void remove(const K& key);
 };

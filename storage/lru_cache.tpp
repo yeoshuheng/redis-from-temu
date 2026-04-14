@@ -83,18 +83,22 @@ void LRUCache<K, V>::deallocate(n_ptr node) {
 };
 
 template <typename K, typename V>
-void LRUCache<K, V>::add(const K& key, const V& value) {
+void LRUCache<K, V>::add(const K& key, const V& value, const uint8_t ttl_ms) {
     n_ptr node;
     const auto it = cache.find(key);
     if (it != cache.end()) {
         node = it->second;
         node->value = value;
+        node->expired_t.reset();
         disconnect(node);
     } else {
         clear();
         node = alloc.allocate(1);
         alloc.construct(node, key, value);
         cache.emplace(key, node);
+    }
+    if (ttl_ms > 0) {
+        node->expired_t = Clock::now() + std::chrono::milliseconds(ttl_ms);
     }
     add_to_tail(node);
 };
@@ -107,6 +111,13 @@ V& LRUCache<K, V>::get(const K& key) {
         throw std::runtime_error(std::format("unable to find node with key: {}", key));
     }
     const auto node = it->second;
+    if (node->expired_t && Clock::now() >= node->expired_t) {
+        spdlog::error("node with key: {} has expired", key);
+        cache.erase(it);
+        disconnect(node);
+        deallocate(node);
+        throw std::runtime_error(std::format("the node with key: {} has expired", key));
+    }
     disconnect(node);
     add_to_tail(node);
     return node->value;
