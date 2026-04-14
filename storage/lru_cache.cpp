@@ -28,6 +28,7 @@ LRUCache<K, V>::~LRUCache() {
     }
     deallocate(head);
     deallocate(tail);
+    cache.clear();
 };
 
 template <typename K, typename V>
@@ -94,7 +95,7 @@ void LRUCache<K, V>::add(const K& key, const V& value) {
         clear();
         node = alloc.allocate(1);
         alloc.construct(node, key, value);
-        cache[key] = node;
+        cache.emplace(key, node);
     }
     add_to_tail(node);
 };
