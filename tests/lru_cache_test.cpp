@@ -1,7 +1,9 @@
-#include <gtest/gtest.h>
 #include "../storage/lru_cache.hpp"
-#include <thread>
+
+#include <gtest/gtest.h>
+
 #include <chrono>
+#include <thread>
 
 using storage::LRUCache;
 

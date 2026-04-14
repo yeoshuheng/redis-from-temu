@@ -5,12 +5,12 @@
 #ifndef LRU_CACHE_HPP
 #define LRU_CACHE_HPP
 
+#include <chrono>
 #include <memory_resource>
 #include <unordered_map>
-#include <chrono>
 
 namespace storage {
-    using Clock = std::chrono::steady_clock;
+using Clock = std::chrono::steady_clock;
 template <typename K, typename V>
 struct LRUNode {
     using n_ptr = LRUNode<K, V>*;
