@@ -10,7 +10,7 @@ namespace core {
 RedisCore::RedisCore(io_ctx& ctx, const size_t max_capacity,
                      const std::shared_ptr<channel>& in_channel,
                      const std::shared_ptr<channel>& out_channel, const uint32_t poll_interval_ms,
-                     const uint32_t ttl_interval_ms)
+                     const uint32_t ttl_interval_ms, const uint32_t ttl_budget)
     : lru_cache(max_capacity),
       max_capacity(max_capacity),
       input(in_channel),
@@ -19,7 +19,8 @@ RedisCore::RedisCore(io_ctx& ctx, const size_t max_capacity,
       poll_interval(poll_interval_ms),
       ttl_interval(ttl_interval_ms),
       poll_timer(ctx),
-      ttl_timer(ctx) {};
+      ttl_timer(ctx),
+      ttl_budget(ttl_budget) {};
 
 void RedisCore::execute(command::Command& cmd) {
     std::visit(
@@ -58,7 +59,8 @@ boost::asio::awaitable<void> RedisCore::poll_loop() {
 boost::asio::awaitable<void> RedisCore::ttl_loop() {
     while (is_running.load()) {
         boost::system::error_code ec;
-        lru_cache.remove_expired();
+        // budgeted ttl conviction to prevent hogging event loop from polling commands
+        lru_cache.remove_expired(ttl_budget);
         ttl_timer.expires_after(std::chrono::milliseconds(ttl_interval));
         co_await ttl_timer.async_wait(boost::asio::redirect_error(boost::asio::use_awaitable, ec));
         if (ec) {

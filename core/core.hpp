@@ -28,6 +28,7 @@ class RedisCore {
     io_ctx& ctx;
     uint32_t poll_interval;
     uint32_t ttl_interval;
+    uint32_t ttl_budget;
     timer poll_timer;
     timer ttl_timer;
 
@@ -38,7 +39,7 @@ class RedisCore {
    public:
     explicit RedisCore(io_ctx& ctx, size_t max_capacity, const std::shared_ptr<channel>& in_channel,
                        const std::shared_ptr<channel>& out_channel, uint32_t poll_interval_ms,
-                       uint32_t ttl_interval_ms);
+                       uint32_t ttl_interval_ms, uint32_t ttl_budget);
     void start();
     void shutdown();
 };

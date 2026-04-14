@@ -98,3 +98,52 @@ TEST(LRUCacheTest, RemoveExpiredRemovesExpiredKeys) {
     EXPECT_THROW(cache.get(2), std::runtime_error);
     EXPECT_EQ(cache.get(3), "three");
 }
+
+TEST(LRUCacheTest, RemoveExpiredZeroBudgetMeansUnlimited) {
+    LRUCache<int, std::string> cache(10);
+
+    cache.add(1, "one", 50);
+    cache.add(2, "two", 50);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(120));
+
+    cache.remove_expired(0);  // unlimited
+
+    EXPECT_THROW(cache.get(1), std::runtime_error);
+    EXPECT_THROW(cache.get(2), std::runtime_error);
+}
+
+TEST(LRUCacheTest, RemoveExpiredRespectsBudget) {
+    LRUCache<int, std::string> cache(10);
+
+    cache.add(1, "one", 50);
+    cache.add(2, "two", 50);
+    cache.add(3, "three", 50);
+    cache.add(4, "four", 50);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(120));
+
+    cache.remove_expired(2);  // only remove 2 items max
+
+    int accessible = 0;
+    int failed = 0;
+
+    auto check = [&](const int key) {
+        try {
+            cache.get(key);
+            accessible++;
+        } catch (...) {
+            failed++;
+        }
+    };
+
+    check(1);
+    check(2);
+    check(3);
+    check(4);
+
+    // 2 should have been removed by budgeted ttl sweep, remaining 2 should be removed by lazy
+    // expiry on get()
+
+    EXPECT_EQ(failed, 4);  // all are expired at this point
+}

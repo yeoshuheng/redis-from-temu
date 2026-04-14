@@ -136,16 +136,21 @@ void LRUCache<K, V>::remove(const K& key) {
 };
 
 template <typename K, typename V>
-void LRUCache<K, V>::remove_expired() {
+void LRUCache<K, V>::remove_expired(const uint32_t budget) {
+    const uint32_t limit = (budget == 0) ? std::numeric_limits<uint32_t>::max() : budget;
+
     auto now = Clock::now();
-    for (auto it = cache.begin(); it != cache.end();) {
-        if (auto node = it->second; node->expired_t && node->expired_t >= now) {
-            it = cache.erase(it);
+    uint32_t consumed = 0;
+
+    for (auto it = cache.begin(); it != cache.end() && consumed < limit;) {
+        if (auto node = it->second; node->expired_t && node->expired_t <= now) {
+            cache.erase(it++);
             disconnect(node);
             deallocate(node);
+            ++consumed;
         } else {
             ++it;
         }
     }
-};
+}
 }  // namespace storage
