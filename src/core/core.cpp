@@ -18,7 +18,7 @@ void RedisCore::execute(command::Command& cmd) {
     std::visit(
         [this]<typename T>(const T& c) {
             if constexpr (std::is_same_v<T, command::SetCommand>) {
-                lru_cache.add(c.key, storage::StoredObject(c.value), c.ttl_ms);
+                lru_cache.add(c.key, core::LRUObject(c.value), c.ttl_ms);
             } else if constexpr (std::is_same_v<T, command::DelCommand>) {
                 lru_cache.remove(c.key);
             } else if constexpr (std::is_same_v<T, command::GetCommand>) {

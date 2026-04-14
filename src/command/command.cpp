@@ -12,10 +12,10 @@
 
 namespace command {
 
-SetCommand::SetCommand(std::string key, storage::stored_value value)
+SetCommand::SetCommand(std::string key, core::stored_value value)
     : key(std::move(key)), value(std::move(value)), ttl_ms(0) {}
 
-SetCommand::SetCommand(std::string key, storage::stored_value value, uint32_t ttl_ms)
+SetCommand::SetCommand(std::string key, core::stored_value value, uint32_t ttl_ms)
     : key(std::move(key)), value(std::move(value)), ttl_ms(ttl_ms) {}
 
 Command build_command(ParsedResult& result) {

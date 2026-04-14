@@ -9,7 +9,7 @@
 #include <utility>
 #include <variant>
 
-#include "../storage/object.hpp"
+#include "../core/object.hpp"
 #include "parsed_results.hpp"
 
 namespace command {
@@ -18,11 +18,11 @@ struct PingCommand {};
 
 struct SetCommand {
     std::string key;
-    storage::stored_value value;
+    core::stored_value value;
     uint32_t ttl_ms;
 
-    SetCommand(std::string key, storage::stored_value value);
-    SetCommand(std::string key, storage::stored_value value, uint32_t ttl_ms);
+    SetCommand(std::string key, core::stored_value value);
+    SetCommand(std::string key, core::stored_value value, uint32_t ttl_ms);
 };
 
 struct GetCommand {
@@ -41,7 +41,7 @@ template <typename T> const T& as(const Command& cmd) {
     return std::get<T>(cmd);
 }
 
-template <typename T> const T& as_value(const storage::stored_value& v) {
+template <typename T> const T& as_value(const core::stored_value& v) {
     return std::get<T>(v);
 }
 

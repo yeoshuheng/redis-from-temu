@@ -5,11 +5,11 @@
 #ifndef OBJECT_HPP
 #define OBJECT_HPP
 
-namespace storage {
+namespace core {
 using stored_value = std::variant<int64_t, std::string>;
-struct StoredObject {
+struct LRUObject {
     stored_value val;
 };
-} // namespace storage
+} // namespace core
 
 #endif // OBJECT_HPP
