@@ -17,17 +17,17 @@ using ResultOption = std::optional<ParsedResult>;
 using ParsedCommandOption = std::optional<Command>;
 
 class Parser {
-   public:
+  public:
     void feed(const char* data, size_t len);
     [[nodiscard]] ParsedCommandOption next_msg();
 
-   private:
+  private:
     std::vector<char> buffer;
     size_t offset = 0;
     [[nodiscard]] ResultOption parse_array(size_t start);
     [[nodiscard]] ResultOption parse_bulk(size_t start);
     [[nodiscard]] std::optional<size_t> find_terminal_idx(size_t start) const;
 };
-}  // namespace command
+} // namespace command
 
-#endif  // PARSER_HPP
+#endif // PARSER_HPP

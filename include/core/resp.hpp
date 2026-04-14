@@ -9,6 +9,6 @@ namespace core {
 struct Response {
     std::string data;
 };
-}  // namespace core
+} // namespace core
 
-#endif  // RESP_HPP
+#endif // RESP_HPP

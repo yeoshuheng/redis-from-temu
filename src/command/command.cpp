@@ -32,19 +32,22 @@ Command build_command(ParsedResult& result) {
     }
 
     if (utils::fast_str_equals(cmd, "GET")) {
-        if (arr.size() != 2) throw std::runtime_error("GET requires 1 argument");
+        if (arr.size() != 2)
+            throw std::runtime_error("GET requires 1 argument");
 
         return GetCommand{arr[1]};
     }
 
     if (utils::fast_str_equals(cmd, "DEL")) {
-        if (arr.size() != 2) throw std::runtime_error("DEL requires 1 argument");
+        if (arr.size() != 2)
+            throw std::runtime_error("DEL requires 1 argument");
 
         return DelCommand{arr[1]};
     }
 
     if (utils::fast_str_equals(cmd, "SET")) {
-        if (arr.size() < 3) throw std::runtime_error("SET requires key + value");
+        if (arr.size() < 3)
+            throw std::runtime_error("SET requires key + value");
 
         if (arr.size() > 4)
             throw std::runtime_error("SET only takes in 3 arguments, key, value and ttl");
@@ -67,4 +70,4 @@ Command build_command(ParsedResult& result) {
     throw std::runtime_error("unknown command: " + cmd);
 }
 
-}  // namespace command
+} // namespace command

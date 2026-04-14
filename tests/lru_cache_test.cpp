@@ -107,7 +107,7 @@ TEST(LRUCacheTest, RemoveExpiredZeroBudgetMeansUnlimited) {
 
     std::this_thread::sleep_for(std::chrono::milliseconds(120));
 
-    cache.remove_expired(0);  // unlimited
+    cache.remove_expired(0); // unlimited
 
     EXPECT_THROW(cache.get(1), std::runtime_error);
     EXPECT_THROW(cache.get(2), std::runtime_error);
@@ -123,7 +123,7 @@ TEST(LRUCacheTest, RemoveExpiredRespectsBudget) {
 
     std::this_thread::sleep_for(std::chrono::milliseconds(120));
 
-    cache.remove_expired(2);  // only remove 2 items max
+    cache.remove_expired(2); // only remove 2 items max
 
     int accessible = 0;
     int failed = 0;
@@ -145,5 +145,5 @@ TEST(LRUCacheTest, RemoveExpiredRespectsBudget) {
     // 2 should have been removed by budgeted ttl sweep, remaining 2 should be removed by lazy
     // expiry on get()
 
-    EXPECT_EQ(failed, 4);  // all are expired at this point
+    EXPECT_EQ(failed, 4); // all are expired at this point
 }

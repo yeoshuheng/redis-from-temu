@@ -13,6 +13,6 @@ struct ParsedResult {
     size_t consumed;
     std::vector<std::string> value;
 };
-}  // namespace command
+} // namespace command
 
-#endif  // PARSER_RESULTS_HPP
+#endif // PARSER_RESULTS_HPP

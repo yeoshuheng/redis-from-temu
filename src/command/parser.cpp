@@ -59,7 +59,7 @@ ResultOption Parser::parse_array(const size_t start) {
     size_t curr_position = crlf_idx + 1;
     std::vector<std::string> parsed_array;
     for (size_t i = 0; i < array_len;
-         i++) {  // RESP2 arrays terminate based on elements parsed, not CRLF
+        i++) { // RESP2 arrays terminate based on elements parsed, not CRLF
         if (curr_position > buffer.size()) {
             return std::nullopt;
         }
@@ -95,7 +95,7 @@ ResultOption Parser::parse_bulk(const size_t start) {
     const size_t bulk_str_len = data_len + header_len + 2;
 
     spdlog::debug("start: {}, buffer_size: {}, header_len: {}, data_len: {}, bulk_str_len: {}",
-                  start, buffer.size(), header_len, data_len, bulk_str_len);
+        start, buffer.size(), header_len, data_len, bulk_str_len);
     if (start + bulk_str_len > buffer.size()) {
         return std::nullopt;
     }
@@ -114,4 +114,4 @@ std::optional<size_t> Parser::find_terminal_idx(const size_t start) const {
     return std::nullopt;
 }
 
-}  // namespace command
+} // namespace command

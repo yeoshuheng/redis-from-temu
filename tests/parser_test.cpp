@@ -18,11 +18,10 @@ static void feed(Parser& p, const char* s) {
 TEST(ParserTest, BasicSet) {
     Parser parser;
 
-    feed(parser,
-         "*3\r\n"
-         "$3\r\nSET\r\n"
-         "$3\r\nkey\r\n"
-         "$5\r\nvalue\r\n");
+    feed(parser, "*3\r\n"
+                 "$3\r\nSET\r\n"
+                 "$3\r\nkey\r\n"
+                 "$5\r\nvalue\r\n");
 
     auto cmd_opt = parser.next_msg();
     ASSERT_TRUE(cmd_opt.has_value());
@@ -42,9 +41,8 @@ TEST(ParserTest, BasicSet) {
 TEST(ParserTest, PingCommand) {
     Parser parser;
 
-    feed(parser,
-         "*1\r\n"
-         "$4\r\nPING\r\n");
+    feed(parser, "*1\r\n"
+                 "$4\r\nPING\r\n");
 
     auto cmd_opt = parser.next_msg();
     ASSERT_TRUE(cmd_opt.has_value());
@@ -57,10 +55,9 @@ TEST(ParserTest, PingCommand) {
 TEST(ParserTest, GetCommand) {
     Parser parser;
 
-    feed(parser,
-         "*2\r\n"
-         "$3\r\nGET\r\n"
-         "$3\r\nkey\r\n");
+    feed(parser, "*2\r\n"
+                 "$3\r\nGET\r\n"
+                 "$3\r\nkey\r\n");
 
     auto cmd_opt = parser.next_msg();
     ASSERT_TRUE(cmd_opt.has_value());
@@ -76,10 +73,9 @@ TEST(ParserTest, GetCommand) {
 TEST(ParserTest, DelCommand) {
     Parser parser;
 
-    feed(parser,
-         "*2\r\n"
-         "$3\r\nDEL\r\n"
-         "$3\r\nkey\r\n");
+    feed(parser, "*2\r\n"
+                 "$3\r\nDEL\r\n"
+                 "$3\r\nkey\r\n");
 
     auto cmd_opt = parser.next_msg();
     ASSERT_TRUE(cmd_opt.has_value());
@@ -119,9 +115,8 @@ TEST(ParserTest, PartialFeed) {
 TEST(ParserTest, MultipleCommands) {
     Parser parser;
 
-    feed(parser,
-         "*1\r\n$4\r\nPING\r\n"
-         "*2\r\n$3\r\nGET\r\n$3\r\nkey\r\n");
+    feed(parser, "*1\r\n$4\r\nPING\r\n"
+                 "*2\r\n$3\r\nGET\r\n$3\r\nkey\r\n");
 
     auto c1 = parser.next_msg();
     auto c2 = parser.next_msg();
@@ -183,10 +178,9 @@ TEST(ParserTest, ChunkedFeedStress) {
 TEST(ParserTest, DrainMultipleMessages) {
     Parser parser;
 
-    feed(parser,
-         "*1\r\n$4\r\nPING\r\n"
-         "*1\r\n$4\r\nPING\r\n"
-         "*1\r\n$4\r\nPING\r\n");
+    feed(parser, "*1\r\n$4\r\nPING\r\n"
+                 "*1\r\n$4\r\nPING\r\n"
+                 "*1\r\n$4\r\nPING\r\n");
 
     for (int i = 0; i < 3; i++) {
         auto cmd = parser.next_msg();

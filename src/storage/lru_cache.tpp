@@ -19,8 +19,7 @@ LRUCache<K, V>::LRUCache(const size_t capacity) : capacity(capacity) {
     tail->prev = head;
 };
 
-template <typename K, typename V>
-LRUCache<K, V>::~LRUCache() {
+template <typename K, typename V> LRUCache<K, V>::~LRUCache() {
     for (auto& [_, node] : cache) {
         deallocate(node);
     }
@@ -29,8 +28,7 @@ LRUCache<K, V>::~LRUCache() {
     cache.clear();
 };
 
-template <typename K, typename V>
-void LRUCache<K, V>::disconnect(n_ptr node) {
+template <typename K, typename V> void LRUCache<K, V>::disconnect(n_ptr node) {
     if (node == nullptr) {
         return;
     }
@@ -45,8 +43,7 @@ void LRUCache<K, V>::disconnect(n_ptr node) {
     }
 };
 
-template <typename K, typename V>
-void LRUCache<K, V>::clear() {
+template <typename K, typename V> void LRUCache<K, V>::clear() {
     while (cache.size() >= capacity) {
         const auto to_evict = head->next;
         if (to_evict == tail) {
@@ -58,8 +55,7 @@ void LRUCache<K, V>::clear() {
     }
 }
 
-template <typename K, typename V>
-void LRUCache<K, V>::add_to_tail(n_ptr node) {
+template <typename K, typename V> void LRUCache<K, V>::add_to_tail(n_ptr node) {
     const auto t_prev = tail->prev;
     t_prev->next = node;
     node->prev = t_prev;
@@ -67,16 +63,14 @@ void LRUCache<K, V>::add_to_tail(n_ptr node) {
     node->next = tail;
 };
 
-template <typename K, typename V>
-void LRUCache<K, V>::sanitise(n_ptr node) {
+template <typename K, typename V> void LRUCache<K, V>::sanitise(n_ptr node) {
     if (node == nullptr) {
         return;
     }
     node->prev = node->next = nullptr;
 };
 
-template <typename K, typename V>
-void LRUCache<K, V>::deallocate(n_ptr node) {
+template <typename K, typename V> void LRUCache<K, V>::deallocate(n_ptr node) {
     alloc.destroy(node);
     alloc.deallocate(node, 1);
 };
@@ -102,8 +96,7 @@ void LRUCache<K, V>::add(const K& key, const V& value, const uint32_t ttl_ms) {
     add_to_tail(node);
 };
 
-template <typename K, typename V>
-V& LRUCache<K, V>::get(const K& key) {
+template <typename K, typename V> V& LRUCache<K, V>::get(const K& key) {
     const auto it = cache.find(key);
     if (it == cache.end()) {
         spdlog::error("cannot find key: {}", key);
@@ -122,8 +115,7 @@ V& LRUCache<K, V>::get(const K& key) {
     return node->value;
 };
 
-template <typename K, typename V>
-void LRUCache<K, V>::remove(const K& key) {
+template <typename K, typename V> void LRUCache<K, V>::remove(const K& key) {
     const auto it = cache.find(key);
     if (it == cache.end()) {
         spdlog::error("cannot find key: {}", key);
@@ -135,8 +127,7 @@ void LRUCache<K, V>::remove(const K& key) {
     deallocate(node);
 };
 
-template <typename K, typename V>
-void LRUCache<K, V>::remove_expired(const uint32_t budget) {
+template <typename K, typename V> void LRUCache<K, V>::remove_expired(const uint32_t budget) {
     const uint32_t limit = (budget == 0) ? std::numeric_limits<uint32_t>::max() : budget;
 
     auto now = Clock::now();
@@ -153,4 +144,4 @@ void LRUCache<K, V>::remove_expired(const uint32_t budget) {
         }
     }
 }
-}  // namespace storage
+} // namespace storage

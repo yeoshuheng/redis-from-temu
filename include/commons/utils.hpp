@@ -22,6 +22,6 @@ inline bool fast_str_equals(const std::string& s, const char* l) {
     }
     return i == s.size();
 };
-}  // namespace utils
+} // namespace utils
 
-#endif  // UTILS_HPP
+#endif // UTILS_HPP

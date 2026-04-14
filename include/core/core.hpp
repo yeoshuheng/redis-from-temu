@@ -20,7 +20,7 @@ class RedisCore {
     using io_ctx = boost::asio::io_context;
     using timer = boost::asio::steady_timer;
 
-   private:
+  private:
     storage::LRUCache<std::string, storage::StoredObject> lru_cache;
     size_t max_capacity;
     std::shared_ptr<i_channel> input;
@@ -38,14 +38,13 @@ class RedisCore {
     boost::asio::awaitable<void> ttl_loop();
     void execute(command::Command& cmd);
 
-   public:
+  public:
     explicit RedisCore(io_ctx& ctx, size_t max_capacity,
-                       const std::shared_ptr<i_channel>& in_channel,
-                       const std::shared_ptr<o_channel>& out_channel, uint32_t poll_interval_ms,
-                       uint32_t ttl_interval_ms, uint32_t ttl_budget);
+        const std::shared_ptr<i_channel>& in_channel, const std::shared_ptr<o_channel>& out_channel,
+        uint32_t poll_interval_ms, uint32_t ttl_interval_ms, uint32_t ttl_budget);
     void start();
     void shutdown();
 };
-}  // namespace core
+} // namespace core
 
-#endif  // CORE_HPP
+#endif // CORE_HPP

@@ -37,16 +37,14 @@ using Command = std::variant<PingCommand, SetCommand, GetCommand, DelCommand>;
 
 Command build_command(ParsedResult& result);
 
-template <typename T>
-const T& as(const Command& cmd) {
+template <typename T> const T& as(const Command& cmd) {
     return std::get<T>(cmd);
 }
 
-template <typename T>
-const T& as_value(const storage::stored_value& v) {
+template <typename T> const T& as_value(const storage::stored_value& v) {
     return std::get<T>(v);
 }
 
-}  // namespace command
+} // namespace command
 
-#endif  // COMMAND_HPP
+#endif // COMMAND_HPP

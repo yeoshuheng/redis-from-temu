@@ -10,6 +10,6 @@ using stored_value = std::variant<int64_t, std::string>;
 struct StoredObject {
     stored_value val;
 };
-}  // namespace storage
+} // namespace storage
 
-#endif  // OBJECT_HPP
+#endif // OBJECT_HPP

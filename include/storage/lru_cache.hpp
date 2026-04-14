@@ -11,8 +11,7 @@
 
 namespace storage {
 using Clock = std::chrono::steady_clock;
-template <typename K, typename V>
-struct LRUNode {
+template <typename K, typename V> struct LRUNode {
     using n_ptr = LRUNode<K, V>*;
 
     K key;
@@ -25,14 +24,13 @@ struct LRUNode {
     LRUNode(K k, V v) : key(k), value(v), prev(nullptr), next(nullptr) {};
 };
 
-template <typename K, typename V>
-class LRUCache {
+template <typename K, typename V> class LRUCache {
     using Node = LRUNode<K, V>;
     using n_ptr = typename Node::n_ptr;
     using mem_pool = std::pmr::unsynchronized_pool_resource;
     using mem_alloc = std::pmr::polymorphic_allocator<Node>;
 
-   private:
+  private:
     n_ptr head;
     n_ptr tail;
     size_t capacity;
@@ -46,7 +44,7 @@ class LRUCache {
     void deallocate(n_ptr node);
     static void sanitise(n_ptr node);
 
-   public:
+  public:
     explicit LRUCache(size_t capacity);
     ~LRUCache();
     LRUCache(const LRUCache&) = delete;
@@ -56,7 +54,7 @@ class LRUCache {
     void remove(const K& key);
     void remove_expired(uint32_t budget = 0);
 };
-}  // namespace storage
+} // namespace storage
 #include "../../src/storage/lru_cache.tpp"
 
-#endif  // LRU_CACHE_HPP
+#endif // LRU_CACHE_HPP
