@@ -2,7 +2,7 @@
 // Created by Yeo Shu Heng on 14/4/26.
 //
 
-#include "../core/core.hpp"
+#include "../../include/core/core.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -18,15 +18,15 @@ RedisCore::RedisCore(io_ctx& ctx, const size_t max_capacity,
       ctx(ctx),
       poll_interval(poll_interval_ms),
       ttl_interval(ttl_interval_ms),
+      ttl_budget(ttl_budget),
       poll_timer(ctx),
-      ttl_timer(ctx),
-      ttl_budget(ttl_budget) {};
+      ttl_timer(ctx) {};
 
 void RedisCore::execute(command::Command& cmd) {
     std::visit(
         [this]<typename T>(const T& c) {
             if constexpr (std::is_same_v<T, command::SetCommand>) {
-                lru_cache.add(c.key, c.value, c.ttl_ms);
+                lru_cache.add(c.key, storage::StoredObject(c.value), c.ttl_ms);
             } else if constexpr (std::is_same_v<T, command::DelCommand>) {
                 lru_cache.remove(c.key);
             } else if constexpr (std::is_same_v<T, command::GetCommand>) {
@@ -50,7 +50,7 @@ boost::asio::awaitable<void> RedisCore::poll_loop() {
             if (ec == boost::asio::error::operation_aborted) {
                 co_return;
             }
-            spdlog::error("unexpected error in redis core poll loop: {}", ec);
+            spdlog::error("unexpected error in redis core poll loop: {}", ec.message());
             co_return;
         }
     }
@@ -67,7 +67,7 @@ boost::asio::awaitable<void> RedisCore::ttl_loop() {
             if (ec == boost::asio::error::operation_aborted) {
                 co_return;
             }
-            spdlog::error("unexpected error in redis core ttl loop: {}", ec);
+            spdlog::error("unexpected error in redis core ttl loop: {}", ec.message());
             co_return;
         }
     }

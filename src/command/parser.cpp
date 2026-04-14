@@ -2,7 +2,7 @@
 // Created by Yeo Shu Heng on 13/4/26.
 //
 
-#include "parser.hpp"
+#include "../../include/command/parser.hpp"
 
 #include <spdlog/spdlog.h>
 

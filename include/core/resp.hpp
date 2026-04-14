@@ -5,8 +5,6 @@
 #ifndef RESP_HPP
 #define RESP_HPP
 
-namespace storage {
+namespace storage {}
 
-}
-
-#endif //RESP_HPP
+#endif  // RESP_HPP

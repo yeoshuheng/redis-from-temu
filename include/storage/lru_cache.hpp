@@ -57,6 +57,6 @@ class LRUCache {
     void remove_expired(uint32_t budget = 0);
 };
 }  // namespace storage
-#include "lru_cache.tpp"
+#include "../../src/storage/lru_cache.tpp"
 
 #endif  // LRU_CACHE_HPP

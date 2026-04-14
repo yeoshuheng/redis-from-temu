@@ -27,13 +27,14 @@ set(gtest_force_shared_crt OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # set up for redis-cpp
+file(GLOB_RECURSE CPP_SOURCES CONFIGURE_DEPENDS src/*.cpp)
 add_library(redis_cpp_lib
-        command/parser.cpp
-        storage/lru_cache.tpp
+        ${CPP_SOURCES}
 )
 
 target_include_directories(redis_cpp_lib PUBLIC
         ${CMAKE_SOURCE_DIR}
+        ${Boost_INCLUDE_DIRS}
 )
 
 target_link_libraries(redis_cpp_lib PUBLIC
@@ -44,10 +45,7 @@ add_executable(main
         main.cpp
 )
 
-file (GLOB TEST_SOURCES
-        tests/*.cpp
-)
-
+file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/*.cpp)
 add_executable(redis_cpp_tests
         ${TEST_SOURCES}
 )
