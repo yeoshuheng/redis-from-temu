@@ -9,47 +9,65 @@
 #include <vector>
 
 #include "../commons/utils.hpp"
+#include "../storage/object.hpp"
 #include "parsed_results.hpp"
 
 namespace command {
-enum class CommandType { PING, SET, GET, DEL };
 
-struct Command {
-    CommandType type;
-    std::vector<std::string> args;
+struct PingCommand {};
+
+struct SetCommand {
+    std::string key;
+    storage::stored_value value;
 };
+
+struct GetCommand {
+    std::string key;
+};
+
+struct DelCommand {
+    std::string key;
+};
+
+using Command = std::variant<PingCommand, SetCommand, GetCommand, DelCommand>;
 
 inline Command build_command(ParsedResult& result) {
     auto& arr = result.value;
     if (arr.empty()) {
         throw std::runtime_error("Empty command");
     }
-
     const std::string& cmd = arr[0];
-    CommandType type;
-
     if (utils::fast_str_equals(cmd, "PING")) {
-        type = CommandType::PING;
-        return Command{type, {}};
+        return PingCommand{};
     }
+    if (utils::fast_str_equals(cmd, "GET")) {
+        if (arr.size() != 2) throw std::runtime_error("GET requires 1 argument");
 
+        return GetCommand{arr[1]};
+    }
+    if (utils::fast_str_equals(cmd, "DEL")) {
+        if (arr.size() != 2) throw std::runtime_error("DEL requires 1 argument");
+
+        return DelCommand{arr[1]};
+    }
     if (utils::fast_str_equals(cmd, "SET")) {
-        type = CommandType::SET;
-    } else if (utils::fast_str_equals(cmd, "GET")) {
-        type = CommandType::GET;
-    } else if (utils::fast_str_equals(cmd, "DEL")) {
-        type = CommandType::DEL;
-    } else {
-        throw std::runtime_error("unknown command: " + cmd);
-    }
+        if (arr.size() < 3) throw std::runtime_error("SET requires key + value");
 
-    std::vector<std::string> args;
-    args.reserve(arr.size() - 1);
-    for (size_t i = 1; i < arr.size(); ++i) {
-        args.push_back(std::move(arr[i]));
+        return SetCommand{arr[1], arr[2]};
     }
-    return Command{type, std::move(args)};
+    throw std::runtime_error("unknown command: " + cmd);
 };
+
+template <typename T>
+const T& as(const Command& cmd) {
+    return std::get<T>(cmd);
+}
+
+template <typename T>
+const T& as_value(const storage::stored_value& v) {
+    return std::get<T>(v);
+}
+
 }  // namespace command
 
 #endif  // COMMAND_HPP

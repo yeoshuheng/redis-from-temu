@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include <cstring>
+#include <variant>
 
 using namespace command;
 
@@ -28,10 +29,14 @@ TEST(ParserTest, BasicSet) {
 
     const Command& cmd = *cmd_opt;
 
-    EXPECT_EQ(cmd.type, CommandType::SET);
-    ASSERT_EQ(cmd.args.size(), 2);
-    EXPECT_EQ(cmd.args[0], "key");
-    EXPECT_EQ(cmd.args[1], "value");
+    ASSERT_TRUE(std::holds_alternative<SetCommand>(cmd));
+
+    const auto& set = as<SetCommand>(cmd);
+
+    EXPECT_EQ(set.key, "key");
+
+    ASSERT_TRUE(std::holds_alternative<std::string>(set.value));
+    EXPECT_EQ(std::get<std::string>(set.value), "value");
 }
 
 TEST(ParserTest, PingCommand) {
@@ -46,8 +51,45 @@ TEST(ParserTest, PingCommand) {
 
     const Command& cmd = *cmd_opt;
 
-    EXPECT_EQ(cmd.type, CommandType::PING);
-    EXPECT_TRUE(cmd.args.empty());
+    EXPECT_TRUE(std::holds_alternative<PingCommand>(cmd));
+}
+
+TEST(ParserTest, GetCommand) {
+    Parser parser;
+
+    feed(parser,
+         "*2\r\n"
+         "$3\r\nGET\r\n"
+         "$3\r\nkey\r\n");
+
+    auto cmd_opt = parser.next_msg();
+    ASSERT_TRUE(cmd_opt.has_value());
+
+    const Command& cmd = *cmd_opt;
+
+    ASSERT_TRUE(std::holds_alternative<GetCommand>(cmd));
+
+    const auto& get = as<GetCommand>(cmd);
+    EXPECT_EQ(get.key, "key");
+}
+
+TEST(ParserTest, DelCommand) {
+    Parser parser;
+
+    feed(parser,
+         "*2\r\n"
+         "$3\r\nDEL\r\n"
+         "$3\r\nkey\r\n");
+
+    auto cmd_opt = parser.next_msg();
+    ASSERT_TRUE(cmd_opt.has_value());
+
+    const Command& cmd = *cmd_opt;
+
+    ASSERT_TRUE(std::holds_alternative<DelCommand>(cmd));
+
+    const auto& del = as<DelCommand>(cmd);
+    EXPECT_EQ(del.key, "key");
 }
 
 TEST(ParserTest, PartialFeed) {
@@ -55,7 +97,6 @@ TEST(ParserTest, PartialFeed) {
 
     feed(parser, "*3\r\n$3\r\nSE");
 
-    // incomplete
     EXPECT_FALSE(parser.next_msg().has_value());
 
     feed(parser, "T\r\n$3\r\nkey\r\n$5\r\nvalue\r\n");
@@ -65,8 +106,14 @@ TEST(ParserTest, PartialFeed) {
 
     const Command& cmd = *cmd_opt;
 
-    EXPECT_EQ(cmd.type, CommandType::SET);
-    EXPECT_EQ(cmd.args[0], "key");
+    ASSERT_TRUE(std::holds_alternative<SetCommand>(cmd));
+
+    const auto& set = as<SetCommand>(cmd);
+
+    EXPECT_EQ(set.key, "key");
+
+    ASSERT_TRUE(std::holds_alternative<std::string>(set.value));
+    EXPECT_EQ(std::get<std::string>(set.value), "value");
 }
 
 TEST(ParserTest, MultipleCommands) {
@@ -82,11 +129,11 @@ TEST(ParserTest, MultipleCommands) {
     ASSERT_TRUE(c1.has_value());
     ASSERT_TRUE(c2.has_value());
 
-    EXPECT_EQ(c1->type, CommandType::PING);
-    EXPECT_EQ(c2->type, CommandType::GET);
+    EXPECT_TRUE(std::holds_alternative<PingCommand>(*c1));
+    EXPECT_TRUE(std::holds_alternative<GetCommand>(*c2));
 
-    ASSERT_FALSE(c2->args.empty());
-    EXPECT_EQ(c2->args[0], "key");
+    const auto& get = as<GetCommand>(*c2);
+    EXPECT_EQ(get.key, "key");
 }
 
 TEST(ParserTest, InvalidInput) {
@@ -123,8 +170,14 @@ TEST(ParserTest, ChunkedFeedStress) {
     auto cmd_opt = parser.next_msg();
     ASSERT_TRUE(cmd_opt.has_value());
 
-    EXPECT_EQ(cmd_opt->type, CommandType::SET);
-    EXPECT_EQ(cmd_opt->args[0], "key");
+    ASSERT_TRUE(std::holds_alternative<SetCommand>(*cmd_opt));
+
+    const auto& set = as<SetCommand>(*cmd_opt);
+
+    EXPECT_EQ(set.key, "key");
+
+    ASSERT_TRUE(std::holds_alternative<std::string>(set.value));
+    EXPECT_EQ(std::get<std::string>(set.value), "value");
 }
 
 TEST(ParserTest, DrainMultipleMessages) {
@@ -138,7 +191,7 @@ TEST(ParserTest, DrainMultipleMessages) {
     for (int i = 0; i < 3; i++) {
         auto cmd = parser.next_msg();
         ASSERT_TRUE(cmd.has_value());
-        EXPECT_EQ(cmd->type, CommandType::PING);
+        EXPECT_TRUE(std::holds_alternative<PingCommand>(*cmd));
     }
 
     EXPECT_FALSE(parser.next_msg().has_value());

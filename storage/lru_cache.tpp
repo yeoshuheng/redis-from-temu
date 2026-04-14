@@ -2,14 +2,13 @@
 // Created by Yeo Shu Heng on 14/4/26.
 //
 
-#include <format>
 #include <spdlog/spdlog.h>
+
+#include <format>
 
 namespace storage {
 template <typename K, typename V>
-LRUCache<K, V>::LRUCache(const size_t capacity)
-    : capacity(capacity) {
-
+LRUCache<K, V>::LRUCache(const size_t capacity) : capacity(capacity) {
     head = alloc.allocate(1);
     alloc.construct(head);
 
@@ -83,7 +82,7 @@ void LRUCache<K, V>::deallocate(n_ptr node) {
 };
 
 template <typename K, typename V>
-void LRUCache<K, V>::add(const K& key, const V& value, const uint8_t ttl_ms) {
+void LRUCache<K, V>::add(const K& key, const V& value, const uint32_t ttl_ms) {
     n_ptr node;
     const auto it = cache.find(key);
     if (it != cache.end()) {
@@ -139,7 +138,7 @@ void LRUCache<K, V>::remove(const K& key) {
 template <typename K, typename V>
 void LRUCache<K, V>::remove_expired() {
     auto now = Clock::now();
-    for (auto it = cache.begin(); it != cache.end(); ) {
+    for (auto it = cache.begin(); it != cache.end();) {
         if (auto node = it->second; node->expired_t && node->expired_t >= now) {
             it = cache.erase(it);
             disconnect(node);
