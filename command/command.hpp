@@ -34,7 +34,7 @@ using Command = std::variant<PingCommand, SetCommand, GetCommand, DelCommand>;
 inline Command build_command(ParsedResult& result) {
     auto& arr = result.value;
     if (arr.empty()) {
-        throw std::runtime_error("Empty command");
+        throw std::runtime_error("empty command");
     }
     const std::string& cmd = arr[0];
     if (utils::fast_str_equals(cmd, "PING")) {
