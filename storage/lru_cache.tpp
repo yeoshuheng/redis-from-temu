@@ -100,7 +100,7 @@ void LRUCache<K, V>::add(const K& key, const V& value) {
 };
 
 template <typename K, typename V>
-V LRUCache<K, V>::get(const K& key) {
+V& LRUCache<K, V>::get(const K& key) {
     const auto it = cache.find(key);
     if (it == cache.end()) {
         spdlog::error("cannot find key: {}", key);

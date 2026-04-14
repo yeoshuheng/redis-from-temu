@@ -49,7 +49,7 @@ class LRUCache {
     LRUCache(const LRUCache&) = delete;
     LRUCache& operator=(const LRUCache&) = delete;
     void add(const K& key, const V& value);
-    V get(const K& key);
+    V& get(const K& key);
     void remove(const K& key);
 };
 }  // namespace storage
