@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 
+# set up for boost
+find_package(Boost 1.81 REQUIRED COMPONENTS system)
+
 # set up for spdlog
 FetchContent_Declare(
         spdlog
@@ -33,7 +36,9 @@ target_include_directories(redis_cpp_lib PUBLIC
         ${CMAKE_SOURCE_DIR}
 )
 
-target_link_libraries(redis_cpp_lib PUBLIC spdlog::spdlog)
+target_link_libraries(redis_cpp_lib PUBLIC
+        spdlog::spdlog
+        Boost::system)
 
 add_executable(main
         main.cpp
