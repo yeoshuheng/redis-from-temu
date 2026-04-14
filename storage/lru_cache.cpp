@@ -9,9 +9,25 @@
 namespace storage {
 template <typename K, typename V>
 LRUCache<K, V>::LRUCache(const size_t capacity)
-    : head(new Node()), tail(new Node()), capacity(capacity) {
+    : capacity(capacity) {
+
+    head = alloc.allocate(1);
+    alloc.construct(head);
+
+    tail = alloc.allocate(1);
+    alloc.construct(tail);
+
     head->next = tail;
     tail->prev = head;
+};
+
+template <typename K, typename V>
+LRUCache<K, V>::~LRUCache() {
+    for (auto& [_, node] : cache) {
+        deallocate(node);
+    }
+    deallocate(head);
+    deallocate(tail);
 };
 
 template <typename K, typename V>
@@ -32,20 +48,19 @@ void LRUCache<K, V>::disconnect(n_ptr node) {
 
 template <typename K, typename V>
 void LRUCache<K, V>::clear() {
-    while (cache.size() > capacity) {
+    while (cache.size() >= capacity) {
         const auto to_evict = head->next;
         if (to_evict == tail) {
             break;
         }
         cache.erase(to_evict->key);
         disconnect(to_evict);
-        delete to_evict;
+        deallocate(to_evict);
     }
 }
 
 template <typename K, typename V>
 void LRUCache<K, V>::add_to_tail(n_ptr node) {
-    sanitise(node);
     const auto t_prev = tail->prev;
     t_prev->next = node;
     node->prev = t_prev;
@@ -62,8 +77,13 @@ void LRUCache<K, V>::sanitise(n_ptr node) {
 };
 
 template <typename K, typename V>
+void LRUCache<K, V>::deallocate(n_ptr node) {
+    alloc.destroy(node);
+    alloc.deallocate(node, 1);
+};
+
+template <typename K, typename V>
 void LRUCache<K, V>::add(const K& key, const V& value) {
-    clear();
     n_ptr node;
     const auto it = cache.find(key);
     if (it != cache.end()) {
@@ -71,7 +91,9 @@ void LRUCache<K, V>::add(const K& key, const V& value) {
         node->value = value;
         disconnect(node);
     } else {
-        node = new Node(key, value);
+        clear();
+        node = alloc.allocate(1);
+        alloc.construct(node, key, value);
         cache[key] = node;
     }
     add_to_tail(node);
@@ -98,6 +120,6 @@ void LRUCache<K, V>::remove(const K& key) {
     const auto node = it->second;
     disconnect(node);
     cache.erase(key);
-    delete node;
+    deallocate(node);
 };
 }  // namespace storage
