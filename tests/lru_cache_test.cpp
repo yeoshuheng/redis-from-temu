@@ -1,11 +1,11 @@
-#include "../include/storage/lru_cache.hpp"
+#include "../include/core/lru_cache.hpp"
 
 #include <gtest/gtest.h>
 
 #include <chrono>
 #include <thread>
 
-using storage::LRUCache;
+using core::LRUCache;
 
 TEST(LRUCacheTest, InsertAndGet) {
     LRUCache<int, std::string> cache(2);

@@ -6,7 +6,7 @@
 
 #include <format>
 
-namespace storage {
+namespace core {
 template <typename K, typename V>
 LRUCache<K, V>::LRUCache(const size_t capacity) : capacity(capacity) {
     head = alloc.allocate(1);
@@ -144,4 +144,4 @@ template <typename K, typename V> void LRUCache<K, V>::remove_expired(const uint
         }
     }
 }
-} // namespace storage
+} // namespace core

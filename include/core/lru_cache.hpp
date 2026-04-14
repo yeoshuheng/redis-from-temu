@@ -9,7 +9,7 @@
 #include <memory_resource>
 #include <unordered_map>
 
-namespace storage {
+namespace core {
 using Clock = std::chrono::steady_clock;
 template <typename K, typename V> struct LRUNode {
     using n_ptr = LRUNode<K, V>*;
@@ -54,7 +54,7 @@ template <typename K, typename V> class LRUCache {
     void remove(const K& key);
     void remove_expired(uint32_t budget = 0);
 };
-} // namespace storage
-#include "../../src/storage/lru_cache.tpp"
+} // namespace core
+#include "../../src/core/lru_cache.tpp"
 
 #endif // LRU_CACHE_HPP

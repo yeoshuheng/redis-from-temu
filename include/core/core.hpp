@@ -9,8 +9,8 @@
 #include <boost/lockfree/spsc_queue.hpp>
 
 #include "../command/parser.hpp"
-#include "../storage/lru_cache.hpp"
 #include "../storage/object.hpp"
+#include "lru_cache.hpp"
 #include "resp.hpp"
 
 namespace core {
@@ -21,7 +21,7 @@ class RedisCore {
     using timer = boost::asio::steady_timer;
 
   private:
-    storage::LRUCache<std::string, storage::StoredObject> lru_cache;
+    LRUCache<std::string, storage::StoredObject> lru_cache;
     size_t max_capacity;
     std::shared_ptr<i_channel> input;
     std::shared_ptr<o_channel> output;
