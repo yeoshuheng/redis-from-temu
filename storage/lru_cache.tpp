@@ -3,6 +3,7 @@
 //
 
 #include <format>
+#include <spdlog/spdlog.h>
 
 namespace storage {
 template <typename K, typename V>
@@ -102,6 +103,7 @@ template <typename K, typename V>
 V LRUCache<K, V>::get(const K& key) {
     const auto it = cache.find(key);
     if (it == cache.end()) {
+        spdlog::error("cannot find key: {}", key);
         throw std::runtime_error(std::format("unable to find node with key: {}", key));
     }
     const auto node = it->second;
@@ -114,6 +116,7 @@ template <typename K, typename V>
 void LRUCache<K, V>::remove(const K& key) {
     const auto it = cache.find(key);
     if (it == cache.end()) {
+        spdlog::error("cannot find key: {}", key);
         throw std::runtime_error(std::format("unable to find node with key: {}", key));
     }
     const auto node = it->second;
