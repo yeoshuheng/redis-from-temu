@@ -11,18 +11,20 @@
 #include "../command/parser.hpp"
 #include "../storage/lru_cache.hpp"
 #include "../storage/object.hpp"
+#include "resp.hpp"
 
 namespace core {
 class RedisCore {
-    using channel = boost::lockfree::spsc_queue<command::Command>;
+    using i_channel = boost::lockfree::spsc_queue<command::Command>;
+    using o_channel = boost::lockfree::spsc_queue<Response>;
     using io_ctx = boost::asio::io_context;
     using timer = boost::asio::steady_timer;
 
    private:
     storage::LRUCache<std::string, storage::StoredObject> lru_cache;
     size_t max_capacity;
-    std::shared_ptr<channel> input;
-    std::shared_ptr<channel> output;
+    std::shared_ptr<i_channel> input;
+    std::shared_ptr<o_channel> output;
     std::atomic<bool> is_running{false};
 
     io_ctx& ctx;
@@ -37,8 +39,9 @@ class RedisCore {
     void execute(command::Command& cmd);
 
    public:
-    explicit RedisCore(io_ctx& ctx, size_t max_capacity, const std::shared_ptr<channel>& in_channel,
-                       const std::shared_ptr<channel>& out_channel, uint32_t poll_interval_ms,
+    explicit RedisCore(io_ctx& ctx, size_t max_capacity,
+                       const std::shared_ptr<i_channel>& in_channel,
+                       const std::shared_ptr<o_channel>& out_channel, uint32_t poll_interval_ms,
                        uint32_t ttl_interval_ms, uint32_t ttl_budget);
     void start();
     void shutdown();

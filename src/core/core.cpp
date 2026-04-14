@@ -8,8 +8,8 @@
 
 namespace core {
 RedisCore::RedisCore(io_ctx& ctx, const size_t max_capacity,
-                     const std::shared_ptr<channel>& in_channel,
-                     const std::shared_ptr<channel>& out_channel, const uint32_t poll_interval_ms,
+                     const std::shared_ptr<i_channel>& in_channel,
+                     const std::shared_ptr<o_channel>& out_channel, const uint32_t poll_interval_ms,
                      const uint32_t ttl_interval_ms, const uint32_t ttl_budget)
     : lru_cache(max_capacity),
       max_capacity(max_capacity),

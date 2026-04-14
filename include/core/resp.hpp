@@ -5,6 +5,10 @@
 #ifndef RESP_HPP
 #define RESP_HPP
 
-namespace storage {}
+namespace core {
+struct Response {
+    std::string data;
+};
+}  // namespace core
 
 #endif  // RESP_HPP
