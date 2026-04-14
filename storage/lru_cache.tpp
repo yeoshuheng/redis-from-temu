@@ -135,4 +135,18 @@ void LRUCache<K, V>::remove(const K& key) {
     cache.erase(key);
     deallocate(node);
 };
+
+template <typename K, typename V>
+void LRUCache<K, V>::remove_expired() {
+    auto now = Clock::now();
+    for (auto it = cache.begin(); it != cache.end(); ) {
+        if (auto node = it->second; node->expired_t && node->expired_t >= now) {
+            it = cache.erase(it);
+            disconnect(node);
+            deallocate(node);
+        } else {
+            ++it;
+        }
+    }
+};
 }  // namespace storage

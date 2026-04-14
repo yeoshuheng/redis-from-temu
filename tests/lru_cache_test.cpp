@@ -84,3 +84,15 @@ TEST(LRUCacheTest, OverwriteClearsTTL) {
     std::this_thread::sleep_for(std::chrono::milliseconds(120));
     EXPECT_EQ(cache.get(1), "ONE");
 }
+
+TEST(LRUCacheTest, RemoveExpiredRemovesExpiredKeys) {
+    LRUCache<int, std::string> cache(3);
+    cache.add(1, "one", 50);
+    cache.add(2, "two", 50);
+    cache.add(3, "three");
+    std::this_thread::sleep_for(std::chrono::milliseconds(120));
+    cache.remove_expired();
+    EXPECT_THROW(cache.get(1), std::runtime_error);
+    EXPECT_THROW(cache.get(2), std::runtime_error);
+    EXPECT_EQ(cache.get(3), "three");
+}

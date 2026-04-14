@@ -54,6 +54,7 @@ class LRUCache {
     void add(const K& key, const V& value, uint8_t ttl_ms = 0);
     V& get(const K& key);
     void remove(const K& key);
+    void remove_expired();
 };
 }  // namespace storage
 #include "lru_cache.tpp"
