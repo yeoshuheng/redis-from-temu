@@ -49,9 +49,10 @@ class LRUCache {
     LRUCache(const LRUCache&) = delete;
     LRUCache& operator=(const LRUCache&) = delete;
     void add(const K& key, const V& value);
-    [[nodiscard]] V get(const K& key);
+    V get(const K& key);
     void remove(const K& key);
 };
 }  // namespace storage
+#include "lru_cache.tpp"
 
 #endif  // LRU_CACHE_HPP

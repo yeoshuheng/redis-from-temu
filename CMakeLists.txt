@@ -26,7 +26,7 @@ FetchContent_MakeAvailable(googletest)
 # set up for redis-cpp
 add_library(redis_cpp_lib
         command/parser.cpp
-        storage/lru_cache.cpp
+        storage/lru_cache.tpp
 )
 
 target_include_directories(redis_cpp_lib PUBLIC
