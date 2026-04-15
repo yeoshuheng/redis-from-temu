@@ -11,15 +11,17 @@
 
 namespace persist {
 enum PersistStrategy { AOF, SNAPSHOT };
-class DiskManager {
+class DiskManager : commons::ThreadHeartBeat {
     std::atomic<bool> running{false};
     core::io_ctx& ctx;
     core::timer disk_write_timer;
     uint32_t flush_interval;
 
   public:
-    DiskManager(core::io_ctx& ctx, const uint32_t flush_interval)
-        : ctx(ctx), disk_write_timer(ctx), flush_interval(flush_interval) {};
+    DiskManager(
+        core::io_ctx& ctx, const commons::heartbeat_state& hb_state, const uint32_t flush_interval)
+        : ThreadHeartBeat(hb_state), ctx(ctx), disk_write_timer(ctx),
+          flush_interval(flush_interval) {};
     virtual ~DiskManager() = default;
     virtual void on_command(command::Command& cmd) = 0;
     virtual boost::asio::awaitable<void> write_to_disk_loop() = 0;

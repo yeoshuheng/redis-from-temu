@@ -6,13 +6,17 @@
 
 #include <spdlog/spdlog.h>
 
+#include <utility>
+
 namespace core {
 RedisCore::RedisCore(io_ctx& ctx, const size_t max_capacity,
-    const std::shared_ptr<i_channel>& in_channel, const std::shared_ptr<o_channel>& out_channel,
-    const uint32_t poll_interval_ms, const uint32_t ttl_interval_ms, const uint32_t ttl_budget)
-    : lru_cache(max_capacity), max_capacity(max_capacity), input(in_channel), output(out_channel),
-      ctx(ctx), poll_interval(poll_interval_ms), ttl_interval(ttl_interval_ms),
-      ttl_budget(ttl_budget), poll_timer(ctx), ttl_timer(ctx) {};
+    const commons::heartbeat_state& hb_state, const std::shared_ptr<i_channel>& in_channel,
+    const std::shared_ptr<o_channel>& out_channel, const uint32_t poll_interval_ms,
+    const uint32_t ttl_interval_ms, const uint32_t ttl_budget)
+    : ThreadHeartBeat(hb_state), lru_cache(max_capacity), max_capacity(max_capacity),
+      input(in_channel), output(out_channel), ctx(ctx), poll_interval(poll_interval_ms),
+      ttl_interval(ttl_interval_ms), ttl_budget(ttl_budget), poll_timer(ctx), ttl_timer(ctx),
+      hb_timer(ctx), check_timer(ctx) {};
 
 void RedisCore::execute(command::Command& cmd) {
     std::visit(
@@ -76,5 +80,42 @@ void RedisCore::shutdown() {
     boost::system::error_code err;
     poll_timer.cancel(err);
     ttl_timer.cancel(err);
+    check_timer.cancel(err);
+    hb_timer.cancel(err);
+};
+
+boost::asio::awaitable<void> RedisCore::beat_loop() override {
+    while (is_running.load()) {
+        boost::system::error_code ec;
+        hb_state->core_heartbeat.store(Clock::now(), std::memory_order_relaxed);
+        hb_timer.expires_after(std::chrono::milliseconds(beat_interval_ms));
+        co_await hb_timer.async_wait(boost::asio::redirect_error(boost::asio::use_awaitable, ec));
+        if (ec) {
+            if (ec == boost::asio::error::operation_aborted) {
+                co_return;
+            }
+            spdlog::error("unexpected error in redis core heartbeat loop: {}", ec.message());
+            co_return;
+        }
+    }
+};
+boost::asio::awaitable<void> RedisCore::check_loop(std::chrono::milliseconds timeout) override {
+    while (is_running.load()) {
+        boost::system::error_code ec;
+        if (const auto last_disk_hb = hb_state->disk_heartbeat.load(std::memory_order_relaxed);
+            Clock::now() - last_disk_hb > timeout) {
+            spdlog::error("disk manager thread timed out, last heartbeat: {}", last_disk_hb);
+        }
+        check_timer.expires_after(std::chrono::milliseconds(check_interval_ms));
+        co_await check_timer.async_wait(
+            boost::asio::redirect_error(boost::asio::use_awaitable, ec));
+        if (ec) {
+            if (ec == boost::asio::error::operation_aborted) {
+                co_return;
+            }
+            spdlog::error("unexpected error in redis core heartbeat check loop: {}", ec.message());
+            co_return;
+        }
+    }
 };
 } // namespace core
