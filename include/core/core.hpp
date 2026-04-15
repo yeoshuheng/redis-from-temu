@@ -14,14 +14,15 @@
 #include "resp.hpp"
 
 namespace core {
+using RedisCache = LRUCache<std::string, core::LRUObject>;
+using io_ctx = boost::asio::io_context;
+using timer = boost::asio::steady_timer;
 class RedisCore {
     using i_channel = boost::lockfree::spsc_queue<command::Command>;
     using o_channel = boost::lockfree::spsc_queue<Response>;
-    using io_ctx = boost::asio::io_context;
-    using timer = boost::asio::steady_timer;
 
   private:
-    LRUCache<std::string, core::LRUObject> lru_cache;
+    RedisCache lru_cache;
     size_t max_capacity;
     std::shared_ptr<i_channel> input;
     std::shared_ptr<o_channel> output;
