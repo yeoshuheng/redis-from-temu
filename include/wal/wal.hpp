@@ -19,6 +19,8 @@ class WAL {
     WALCodec codec{};
     int fd;
     std::FILE* file;
+    std::atomic<uint64_t> n_bytes_written;
+    std::atomic<uint64_t> n_bytes_flushed;
 
   public:
     explicit WAL(const std::string& path);
@@ -27,6 +29,7 @@ class WAL {
     void flush();                             // for disk thread, expensive fsync
     void recover(std::function<void(command::Command)> const& replay);
     void clear();
+    bool is_empty() const;
 };
 } // namespace wal
 

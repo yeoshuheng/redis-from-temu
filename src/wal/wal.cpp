@@ -24,8 +24,13 @@ WAL::~WAL() {
         fclose(file);
 }
 
+bool WAL::is_empty() const {
+    return n_bytes_flushed.load(std::memory_order_acquire) ==
+           n_bytes_written.load(std::memory_order_acquire);
+}
+
 void WAL::append(const command::Command& cmd) {
-    const std::string serialized = codec.serialize(cmd);
+    const std::string serialized = wal::WALCodec::serialize(cmd);
     const uint32_t size = serialized.size();
     // create checksum
     const uint32_t crc = crc32(0, reinterpret_cast<const Bytef*>(serialized.data()), size);
@@ -42,12 +47,15 @@ void WAL::append(const command::Command& cmd) {
     if (fwrite(serialized.data(), 1, size, file) != size) {
         throw std::runtime_error(std::format("failed to write data to WAL file at {}", path));
     };
+    n_bytes_written.fetch_add(sizeof(size) + sizeof(crc) + size, std::memory_order_release);
 };
 
 void WAL::flush() {
     std::lock_guard<std::mutex> lock(m);
     fflush(file);
     fsync(fd);
+    n_bytes_flushed.store(
+        n_bytes_written.load(std::memory_order_acquire), std::memory_order_release);
 };
 
 void WAL::recover(std::function<void(command::Command)> const& replay) {
