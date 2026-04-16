@@ -74,7 +74,6 @@ void RedisCore::start() {
     boost::asio::co_spawn(ctx, poll_loop(), boost::asio::detached);
     boost::asio::co_spawn(ctx, ttl_loop(), boost::asio::detached);
     boost::asio::co_spawn(ctx, beat_loop(), boost::asio::detached);
-    boost::asio::co_spawn(ctx, check_loop(std::chrono::milliseconds(100)), boost::asio::detached);
 };
 
 void RedisCore::shutdown() {
@@ -89,7 +88,7 @@ void RedisCore::shutdown() {
 boost::asio::awaitable<void> RedisCore::beat_loop() {
     while (is_running.load()) {
         boost::system::error_code ec;
-        hb_state->core_heartbeat.store(Clock::now(), std::memory_order_relaxed);
+        hb_state->core_heartbeat.store(Clock::now().time_since_epoch().count(), std::memory_order_relaxed);
         hb_timer.expires_after(std::chrono::milliseconds(beat_interval_ms));
         co_await hb_timer.async_wait(boost::asio::redirect_error(boost::asio::use_awaitable, ec));
         if (ec) {
@@ -97,26 +96,6 @@ boost::asio::awaitable<void> RedisCore::beat_loop() {
                 co_return;
             }
             spdlog::error("unexpected error in redis core heartbeat loop: {}", ec.message());
-            co_return;
-        }
-    }
-};
-boost::asio::awaitable<void> RedisCore::check_loop(const std::chrono::milliseconds timeout) {
-    while (is_running.load()) {
-        boost::system::error_code ec;
-        if (const auto last_disk_hb = hb_state->disk_heartbeat.load(std::memory_order_relaxed);
-            Clock::now() - last_disk_hb > timeout) {
-            spdlog::error("disk manager thread timed out, last heartbeat: {}",
-                last_disk_hb.time_since_epoch().count());
-        }
-        check_timer.expires_after(std::chrono::milliseconds(check_interval_ms));
-        co_await check_timer.async_wait(
-            boost::asio::redirect_error(boost::asio::use_awaitable, ec));
-        if (ec) {
-            if (ec == boost::asio::error::operation_aborted) {
-                co_return;
-            }
-            spdlog::error("unexpected error in redis core heartbeat check loop: {}", ec.message());
             co_return;
         }
     }

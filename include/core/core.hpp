@@ -46,7 +46,6 @@ class RedisCore final : commons::ThreadHeartBeat {
     boost::asio::awaitable<void> ttl_loop();
     void execute(command::Command& cmd);
     boost::asio::awaitable<void> beat_loop() override;
-    boost::asio::awaitable<void> check_loop(std::chrono::milliseconds timeout) override;
 
   public:
     explicit RedisCore(io_ctx& ctx, size_t max_capacity, const commons::heartbeat_state& hb_state,
