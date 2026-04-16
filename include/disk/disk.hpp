@@ -6,7 +6,7 @@
 #define DISK_HPP
 
 #include "../wal/wal.hpp"
-#include "core.hpp"
+#include "../core/core.hpp"
 
 namespace core {
 class DiskManager final : commons::ThreadHeartBeat {

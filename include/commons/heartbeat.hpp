@@ -13,8 +13,8 @@ namespace commons {
 enum class FailureState { OK = 0, SUSPECTED = 1, FAILED = 2 };
 
 struct ThreadHeartBeatState {
-    std::atomic<core::Clock::time_point> core_heartbeat;
-    std::atomic<core::Clock::time_point> disk_heartbeat;
+    std::atomic<uint64_t> core_heartbeat;
+    std::atomic<uint64_t> disk_heartbeat;
     std::atomic<bool> core_failure{false};
     std::atomic<bool> disk_failure{false};
 };

@@ -1,7 +1,7 @@
 //
 // Created by Yeo Shu Heng on 16/4/26.
 //
-#include "../../include/core/disk.hpp"
+#include "../../include/disk/disk.hpp"
 
 namespace core {
 DiskManager::DiskManager(io_ctx& ctx, const wal_ptr& wal, const commons::heartbeat_state& hb_state,
