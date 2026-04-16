@@ -36,35 +36,30 @@ core::stored_value WALCodec::deserialize_stored_value(const char*& str) {
     const uint8_t type = *str++;
     const uint32_t size = utils::read_u32(str);
     switch (static_cast<WALValue>(type)) {
-
     case WALValue::INT64: {
         int64_t v;
         std::memcpy(&v, str, sizeof(v));
         str += sizeof(v);
         return v;
     }
-
     case WALValue::DOUBLE: {
         double v;
         std::memcpy(&v, str, sizeof(v));
         str += sizeof(v);
         return v;
     }
-
     case WALValue::FLOAT: {
         float v;
         std::memcpy(&v, str, sizeof(v));
         str += sizeof(v);
         return v;
     }
-
     case WALValue::STRING: {
         std::string v(str, size);
         str += size;
         return v;
     }
     }
-
     throw std::runtime_error("unknown stored value, WAL corrupted, stored value can only be "
                              "string, float, double or int");
 };
