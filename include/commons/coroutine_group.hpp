@@ -17,7 +17,7 @@ namespace commons {
 template <typename T>
 concept void_awaitable = std::same_as<std::decay_t<T>, boost::asio::awaitable<void>>;
 class CoroutineGroup {
-    std::atomic<int> n_active;
+    std::atomic<int> n_active{0};
     std::atomic<bool> stopping{false};
     std::mutex m;
     std::condition_variable cv;
@@ -31,7 +31,14 @@ class CoroutineGroup {
     };
 
   public:
+    ~CoroutineGroup() {
+        stop();
+        join();
+    }
+
     template <void_awaitable T> void spawn(boost::asio::io_context& ctx, T&& coroutine) {
+        if (is_stopping())
+            return;
         n_active.fetch_add(1, std::memory_order_acq_rel);
         boost::asio::co_spawn(
             ctx,
@@ -46,7 +53,10 @@ class CoroutineGroup {
 
     void join() {
         std::unique_lock<std::mutex> lock(m);
-        cv.wait(lock, [&] { return n_active.load(std::memory_order_acquire) == 0; });
+        cv.wait(lock, [&] {
+            return stopping.load(std::memory_order_acquire) &&
+                   n_active.load(std::memory_order_acquire) == 0;
+        });
     };
 
     bool is_stopping() const { return stopping.load(std::memory_order_acquire); };
