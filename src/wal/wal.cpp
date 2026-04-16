@@ -1,12 +1,12 @@
 //
 // Created by Yeo Shu Heng on 16/4/26.
 //
-#include "../../include/core/wal.hpp"
+#include "../../include/wal/wal.hpp"
 
 #include "spdlog/spdlog.h"
 #include <zlib.h>
 
-namespace core {
+namespace wal {
 WAL::WAL(const std::string& path) : path(path) {
     // https://en.cppreference.com/w/cpp/io/c/fopen.html
     // try to open with read + binary first
@@ -88,4 +88,4 @@ void WAL::clear() {
     fd = -1;
     std::remove(path.c_str());
 };
-} // namespace core
+} // namespace wal

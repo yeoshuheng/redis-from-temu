@@ -4,9 +4,9 @@
 #include <gtest/gtest.h>
 
 #include "include/command/command.hpp"
-#include "include/core/wal_codec.hpp"
+#include "include/wal/wal_codec.hpp"
 
-using namespace core;
+using namespace wal;
 
 TEST(WALCodecTest, SerializeDeserialize_Int64) {
     stored_value val = int64_t(123456789);

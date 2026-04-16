@@ -3,17 +3,17 @@
 //
 #include <gtest/gtest.h>
 
-#include "include/core/wal.hpp"
+#include "include/wal/wal.hpp"
 
 #include <filesystem>
 
-using namespace core;
+using namespace wal;
 
 TEST(WALTest, DetectsChecksumMismatch) {
     const std::string path = "test_wal_crc.log";
     std::filesystem::remove(path);
 
-    core::WAL wal(path);
+    WAL wal(path);
 
     command::SetCommand cmd{"key", int64_t(999), 0};
     wal.append(cmd);
@@ -44,7 +44,7 @@ TEST(WALTest, ClearDeletesFile) {
     std::filesystem::remove(path);
 
     {
-        core::WAL wal(path);
+        WAL wal(path);
         wal.append(command::PingCommand{});
         wal.flush();
         wal.clear();

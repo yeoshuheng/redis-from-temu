@@ -9,6 +9,9 @@ include(FetchContent)
 # set up for boost
 find_package(Boost 1.81 REQUIRED COMPONENTS system)
 
+# set up for zlib
+find_package(ZLIB REQUIRED)
+
 # set up for spdlog
 FetchContent_Declare(
         spdlog
@@ -39,7 +42,8 @@ target_include_directories(redis_cpp_lib PUBLIC
 
 target_link_libraries(redis_cpp_lib PUBLIC
         spdlog::spdlog
-        Boost::system)
+        Boost::system
+        ZLIB::ZLIB)
 
 add_executable(main
         main.cpp
@@ -54,6 +58,7 @@ target_link_libraries(redis_cpp_tests
         PRIVATE
         redis_cpp_lib
         GTest::gtest_main
+        ZLIB::ZLIB
 )
 
 include(GoogleTest)

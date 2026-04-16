@@ -1,11 +1,11 @@
 //
 // Created by Yeo Shu Heng on 16/4/26.
 //
-#include "../../include/core/wal_codec.hpp"
+#include "../../include/wal/wal_codec.hpp"
 #include "../../include/commons/utils.hpp"
 #include "spdlog/spdlog.h"
 
-namespace core {
+namespace wal {
 std::string WALCodec::serialize_stored_value(const stored_value& val) {
     std::string serialized;
     std::visit(
@@ -146,4 +146,4 @@ command::Command WALCodec::deserialize(const std::string& str) {
     }
     throw std::runtime_error("unknown command type, WAL corrupted, cannot read from WAL");
 };
-} // namespace core
+} // namespace wal

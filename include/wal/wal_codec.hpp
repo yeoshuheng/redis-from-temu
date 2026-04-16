@@ -9,7 +9,8 @@
 
 #include "include/command/command.hpp"
 
-namespace core {
+namespace wal {
+using core::stored_value;
 enum class WALCommand { PING = 0, SET = 1, GET = 2, DEL = 3 };
 enum class WALValue { STRING = 0, INT64 = 1, FLOAT = 2, DOUBLE = 3 };
 class WALCodec {
@@ -19,6 +20,6 @@ class WALCodec {
     static std::string serialize_stored_value(const stored_value& val);
     static stored_value deserialize_stored_value(const char*& str);
 };
-} // namespace core
+} // namespace wal
 
 #endif // WAL_CODEC_HPP

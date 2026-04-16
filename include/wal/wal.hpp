@@ -5,12 +5,12 @@
 #ifndef WAL_HPP
 #define WAL_HPP
 
-#include "./wal_codec.hpp"
+#include "../wal/wal_codec.hpp"
 #include "include/command/command.hpp"
 #include <functional>
 #include <string>
 
-namespace core {
+namespace wal {
 constexpr size_t RAM_BUFFER_BYTES = 64 * 1024;
 class WAL {
   private:
@@ -28,6 +28,6 @@ class WAL {
     void recover(std::function<void(command::Command)> const& replay);
     void clear();
 };
-} // namespace core
+} // namespace wal
 
 #endif // WAL_HPP
