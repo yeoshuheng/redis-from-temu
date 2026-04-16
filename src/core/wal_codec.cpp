@@ -9,20 +9,21 @@ namespace core {
 std::string WALCodec::serialize_stored_value(const stored_value& val) {
     std::string serialized;
     std::visit(
-        [&]<typename T>(T& v) {
-            if constexpr (std::is_same_v<T, int64_t>) {
+        [&]<typename T>(T&& v) {
+            using U = std::decay_t<T>;
+            if constexpr (std::is_same_v<U, int64_t>) {
                 serialized.push_back(static_cast<char>(WALValue::INT64));
                 utils::write_u32(serialized, sizeof(v));
                 serialized.append(reinterpret_cast<const char*>(&v), sizeof(v));
-            } else if constexpr (std::is_same_v<T, double>) {
+            } else if constexpr (std::is_same_v<U, double>) {
                 serialized.push_back(static_cast<char>(WALValue::DOUBLE));
                 utils::write_u32(serialized, sizeof(v));
                 serialized.append(reinterpret_cast<const char*>(&v), sizeof(v));
-            } else if constexpr (std::is_same_v<T, float>) {
+            } else if constexpr (std::is_same_v<U, float>) {
                 serialized.push_back(static_cast<char>(WALValue::FLOAT));
                 utils::write_u32(serialized, sizeof(v));
-                serialized.append(reinterpret_cast<const char*>(&val), sizeof(v));
-            } else if constexpr (std::is_same_v<T, std::string>) {
+                serialized.append(reinterpret_cast<const char*>(&v), sizeof(v));
+            } else if constexpr (std::is_same_v<U, std::string>) {
                 serialized.push_back(static_cast<char>(WALValue::STRING));
                 utils::write_u32(serialized, v.size());
                 serialized.append(v);
@@ -69,20 +70,21 @@ std::string WALCodec::serialize(const command::Command& cmd) {
     uint8_t type = 0;
     std::visit(
         [&]<typename T>(T&& c) {
-            if constexpr (std::is_same_v<T, command::PingCommand>) {
+            using U = std::decay_t<T>;
+            if constexpr (std::is_same_v<U, command::PingCommand>) {
                 type = static_cast<uint8_t>(WALCommand::PING);
-            } else if constexpr (std::is_same_v<T, command::SetCommand>) {
+            } else if constexpr (std::is_same_v<U, command::SetCommand>) {
                 type = static_cast<uint8_t>(WALCommand::SET);
                 utils::write_u32(log, c.key.size());
                 log.append(c.key);
                 const std::string serialized_value = serialize_stored_value(c.value);
-                utils::write_u32(log, serialized_value.size());
                 log.append(serialized_value);
-            } else if constexpr (std::is_same_v<T, command::DelCommand>) {
+                utils::write_u32(log, c.ttl_ms);
+            } else if constexpr (std::is_same_v<U, command::DelCommand>) {
                 type = static_cast<uint8_t>(WALCommand::DEL);
                 utils::write_u32(log, c.key.size());
                 log.append(c.key);
-            } else if constexpr (std::is_same_v<T, command::GetCommand>) {
+            } else if constexpr (std::is_same_v<U, command::GetCommand>) {
                 type = static_cast<uint8_t>(WALCommand::GET);
                 utils::write_u32(log, c.key.size());
                 log.append(c.key);
@@ -97,31 +99,50 @@ std::string WALCodec::serialize(const command::Command& cmd) {
 }
 
 command::Command WALCodec::deserialize(const std::string& str) {
-    const char* ptr = str.data();
+    const char* begin = str.data();
+    const char* ptr = begin;
     uint8_t type = *ptr++; // first byte is type
     uint32_t args_size = utils::read_u32(ptr);
+    const char* end = ptr + args_size;
+
+    auto check = [&](const char* p) {
+        if (p > end)
+            throw std::runtime_error("WAL data corrupted, data is out-of-bound");
+    };
+
     spdlog::debug("recv: {}, type: {}, arg_size: {}", str, type, args_size);
     switch (static_cast<WALCommand>(type)) {
     case WALCommand::PING:
         return command::PingCommand{};
-    case WALCommand::SET:
+    case WALCommand::SET: {
         const uint32_t key_len = utils::read_u32(ptr);
+        check(ptr);
         std::string key(ptr, key_len);
         ptr += key_len;
-        const uint32_t value_size = utils::read_u32(ptr);
-        std::string value(ptr, value_size);
-        ptr += value_size;
-        stored_value deserialized_value = deserialize_stored_value(ptr);
+        check(ptr);
+
+        const stored_value deserialized_value = deserialize_stored_value(ptr);
+        check(ptr);
+
         const uint32_t ttl = utils::read_u32(ptr);
+        check(ptr);
+
         return command::SetCommand{std::move(key), deserialized_value, ttl};
-    case WALCommand::DEL:
+    }
+    case WALCommand::DEL: {
         const uint32_t dkey_len = utils::read_u32(ptr);
+        check(ptr);
         std::string dkey(ptr, dkey_len);
+        ptr += dkey_len;
         return command::DelCommand{std::move(dkey)};
-    case WALCommand::GET:
+    }
+    case WALCommand::GET: {
         const uint32_t gkey_len = utils::read_u32(ptr);
+        check(ptr);
         std::string gkey(ptr, gkey_len);
+        ptr += gkey_len;
         return command::GetCommand{std::move(gkey)};
+    }
     }
     throw std::runtime_error("unknown command type, WAL corrupted, cannot read from WAL");
 };
