@@ -25,6 +25,7 @@ void WAL::append(const command::Command& cmd) {
     // create checksum
     const uint32_t crc = crc32(0, reinterpret_cast<const Bytef*>(serialized.data()), size);
     std::lock_guard<std::mutex> lock(m);
+    fseek(file, 0, SEEK_END);
     if (fwrite(&size, sizeof(size), 1, file) != 1) {
         throw std::runtime_error(std::format("failed to write size to WAL file at {}", path));
     };
@@ -71,6 +72,7 @@ void WAL::recover(std::function<void(command::Command)> const& replay) {
     fflush(file);
     const long pos = ftell(file);
     ftruncate(fd, pos);
+    fseek(file, 0, SEEK_END);
 };
 
 void WAL::clear() {
