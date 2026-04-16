@@ -19,6 +19,11 @@ WAL::WAL(const std::string& path) : path(path) {
     fd = fileno(file);
 };
 
+WAL::~WAL() {
+    if (file)
+        fclose(file);
+}
+
 void WAL::append(const command::Command& cmd) {
     const std::string serialized = codec.serialize(cmd);
     const uint32_t size = serialized.size();
@@ -79,6 +84,8 @@ void WAL::clear() {
     std::lock_guard<std::mutex> lock(m);
     spdlog::warn("clearing WAL file at: {}", path);
     fclose(file);
+    file = nullptr;
+    fd = -1;
     std::remove(path.c_str());
 };
 } // namespace core

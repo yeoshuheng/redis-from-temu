@@ -17,11 +17,12 @@ class WAL {
     std::mutex m;
     std::string path;
     WALCodec codec{};
-    uint8_t fd;
+    int fd;
     std::FILE* file;
 
   public:
     explicit WAL(const std::string& path);
+    ~WAL();
     void append(const command::Command& cmd); // for core thread, cheap writes to RAM
     void flush();                             // for disk thread, expensive fsync
     void recover(std::function<void(command::Command)> const& replay);
