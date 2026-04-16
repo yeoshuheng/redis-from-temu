@@ -103,7 +103,7 @@ template <typename K, typename V> V& LRUCache<K, V>::get(const K& key) {
         throw std::runtime_error(std::format("unable to find node with key: {}", key));
     }
     const auto node = it->second;
-    if (node->expired_t && Clock::now() >= node->expired_t) {
+    if (node->expired_t.has_value() && Clock::now() >= *node->expired_t) {
         spdlog::error("node with key: {} has expired", key);
         cache.erase(it);
         disconnect(node);
@@ -134,7 +134,7 @@ template <typename K, typename V> void LRUCache<K, V>::remove_expired(const uint
     uint32_t consumed = 0;
 
     for (auto it = cache.begin(); it != cache.end() && consumed < limit;) {
-        if (auto node = it->second; node->expired_t && node->expired_t <= now) {
+        if (auto node = it->second; node->expired_t.has_value() && *node->expired_t <= now) {
             cache.erase(it++);
             disconnect(node);
             deallocate(node);
