@@ -33,9 +33,7 @@ TEST(WALTest, DetectsChecksumMismatch) {
 
     std::vector<command::Command> recovered;
 
-    wal.recover([&](command::Command cmd) {
-        recovered.push_back(std::move(cmd));
-    });
+    wal.recover([&](command::Command cmd) { recovered.push_back(std::move(cmd)); });
 
     // Corrupted entry should not be replayed
     ASSERT_TRUE(recovered.empty() || recovered.size() == 0);
@@ -54,4 +52,3 @@ TEST(WALTest, ClearDeletesFile) {
 
     ASSERT_FALSE(std::filesystem::exists(path));
 }
-

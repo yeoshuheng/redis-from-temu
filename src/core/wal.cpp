@@ -8,11 +8,12 @@
 #include <zlib.h>
 
 namespace core {
-WAL::WAL(const std::string &path): path(path) {
+WAL::WAL(const std::string& path) : path(path) {
     // https://en.cppreference.com/w/cpp/io/c/fopen.html
     // a+b means open file in append r/w + binary
     file = fopen(path.c_str(), "a+b");
-    if (!file) throw std::runtime_error(std::format("failed to open WAL file at {}", path));
+    if (!file)
+        throw std::runtime_error(std::format("failed to open WAL file at {}", path));
     setvbuf(file, nullptr, _IOFBF, RAM_BUFFER_BYTES);
     fd = fileno(file);
 };
@@ -56,7 +57,9 @@ void WAL::recover(std::function<void(command::Command)> const& replay) {
             spdlog::warn("WAL corrupted, command body partially written to");
             break;
         }
-        if (const uint32_t expected = crc32(0, reinterpret_cast<const Bytef*>(command.data()), size); expected != crc) {
+        if (const uint32_t expected =
+                crc32(0, reinterpret_cast<const Bytef*>(command.data()), size);
+            expected != crc) {
             spdlog::warn("WAL corrupted, mismatch in checksum");
             break;
         }
