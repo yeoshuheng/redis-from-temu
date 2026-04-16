@@ -4,16 +4,17 @@
 #include "../../include/core/wal.hpp"
 
 #include "spdlog/spdlog.h"
-#include <boost/asio/detail/mutex.hpp>
 #include <zlib.h>
 
 namespace core {
 WAL::WAL(const std::string& path) : path(path) {
     // https://en.cppreference.com/w/cpp/io/c/fopen.html
-    // a+b means open file in append r/w + binary
-    file = fopen(path.c_str(), "a+b");
-    if (!file)
-        throw std::runtime_error(std::format("failed to open WAL file at {}", path));
+    // try to open with read + binary first
+    file = fopen(path.c_str(), "r+b");
+    if (!file) {
+        spdlog::warn(std::format("failed to find WAL file at {}, starting new file", path));
+        file = fopen(path.c_str(), "w+b");
+    }
     setvbuf(file, nullptr, _IOFBF, RAM_BUFFER_BYTES);
     fd = fileno(file);
 };
@@ -44,6 +45,7 @@ void WAL::flush() {
 };
 
 void WAL::recover(std::function<void(command::Command)> const& replay) {
+    std::lock_guard<std::mutex> lock(m);
     rewind(file);
     uint32_t size, crc;
     // read file, terminates at first failed / corrupted data.
@@ -66,6 +68,7 @@ void WAL::recover(std::function<void(command::Command)> const& replay) {
         replay(codec.deserialize(command));
     }
     // truncates where data is corrupted.
+    fflush(file);
     const long pos = ftell(file);
     ftruncate(fd, pos);
 };
