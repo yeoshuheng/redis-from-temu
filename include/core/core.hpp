@@ -10,6 +10,7 @@
 
 #include "../command/parser.hpp"
 #include "../commons/heartbeat.hpp"
+#include "../wal/wal.hpp"
 #include "lru_cache.hpp"
 #include "object.hpp"
 #include "resp.hpp"
@@ -18,6 +19,7 @@ namespace core {
 using RedisCache = LRUCache<std::string, core::LRUObject>;
 using io_ctx = boost::asio::io_context;
 using timer = boost::asio::steady_timer;
+using wal_ptr = std::shared_ptr<wal::WAL>;
 using run_atomic = std::atomic<bool>;
 class RedisCore final : commons::ThreadHeartBeat {
     using i_channel = boost::lockfree::spsc_queue<command::Command>;
@@ -28,8 +30,9 @@ class RedisCore final : commons::ThreadHeartBeat {
     size_t max_capacity;
     std::shared_ptr<i_channel> input;
     std::shared_ptr<o_channel> output;
-    run_atomic is_running{false};
+    wal_ptr wal;
 
+    run_atomic is_running{false};
     io_ctx& ctx;
     uint32_t poll_interval;
     uint32_t ttl_interval;
@@ -47,8 +50,9 @@ class RedisCore final : commons::ThreadHeartBeat {
 
   public:
     explicit RedisCore(io_ctx& ctx, size_t max_capacity, const commons::heartbeat_state& hb_state,
-        const std::shared_ptr<i_channel>& in_channel, const std::shared_ptr<o_channel>& out_channel,
-        uint32_t poll_interval_ms, uint32_t ttl_interval_ms, uint32_t ttl_budget);
+        const wal_ptr& wal, const std::shared_ptr<i_channel>& in_channel,
+        const std::shared_ptr<o_channel>& out_channel, uint32_t poll_interval_ms,
+        uint32_t ttl_interval_ms, uint32_t ttl_budget);
     void start();
     void shutdown();
 };

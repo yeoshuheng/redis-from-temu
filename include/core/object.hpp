@@ -6,7 +6,7 @@
 #define OBJECT_HPP
 
 namespace core {
-using stored_value = std::variant<int64_t, std::string>;
+using stored_value = std::variant<int64_t, double, float, std::string>;
 struct LRUObject {
     stored_value val;
 };
