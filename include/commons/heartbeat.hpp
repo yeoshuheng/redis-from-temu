@@ -15,25 +15,19 @@ enum class FailureState { OK = 0, SUSPECTED = 1, FAILED = 2 };
 struct ThreadHeartBeatState {
     std::atomic<uint64_t> core_heartbeat;
     std::atomic<uint64_t> disk_heartbeat;
-    std::atomic<bool> core_failure{false};
-    std::atomic<bool> disk_failure{false};
 };
 using heartbeat_state = std::shared_ptr<ThreadHeartBeatState>;
 class ThreadHeartBeat {
   public:
-    explicit ThreadHeartBeat(const heartbeat_state& hb_state, const uint32_t beat_interval_ms = 100,
-        const uint32_t check_interval_ms = 100)
-        : hb_state(hb_state), beat_interval_ms(beat_interval_ms),
-          check_interval_ms(check_interval_ms) {};
+    explicit ThreadHeartBeat(const heartbeat_state& hb_state, const uint32_t beat_interval_ms = 100)
+        : hb_state(hb_state), beat_interval_ms(beat_interval_ms) {};
     virtual ~ThreadHeartBeat() = default;
 
   protected:
     heartbeat_state hb_state;
     uint32_t beat_interval_ms;
-    uint32_t check_interval_ms;
 
     virtual boost::asio::awaitable<void> beat_loop() = 0;
-    virtual boost::asio::awaitable<void> check_loop(std::chrono::milliseconds timeout) = 0;
 };
 } // namespace commons
 

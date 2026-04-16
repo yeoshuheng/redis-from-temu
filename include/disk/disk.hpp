@@ -5,14 +5,20 @@
 #ifndef DISK_HPP
 #define DISK_HPP
 
-#include "../wal/wal.hpp"
+#include "../../include/commons/coroutine_group.hpp"
 #include "../core/core.hpp"
+#include "state.hpp"
 
-namespace core {
+namespace disk {
+using core::Clock;
+using core::io_ctx;
+using core::timer;
+using core::wal_ptr;
 class DiskManager final : commons::ThreadHeartBeat {
     io_ctx& ctx;
     wal_ptr wal;
-    run_atomic is_running{false};
+    std::atomic<DiskManagerState> state{DiskManagerState::STOPPED};
+    commons::CoroutineGroup group{};
 
     timer flush_timer;
     timer hb_timer;
@@ -22,7 +28,8 @@ class DiskManager final : commons::ThreadHeartBeat {
 
     boost::asio::awaitable<void> disk_loop();
     boost::asio::awaitable<void> beat_loop() override;
-    boost::asio::awaitable<void> check_loop(std::chrono::milliseconds timeout) override;
+    bool is_running() const;
+    bool is_beating() const;
 
   public:
     DiskManager(io_ctx& ctx, const wal_ptr& wal, const commons::heartbeat_state& hb_state,
@@ -31,6 +38,6 @@ class DiskManager final : commons::ThreadHeartBeat {
     void start();
     void shutdown();
 };
-} // namespace core
+} // namespace disk
 
 #endif // DISK_HPP

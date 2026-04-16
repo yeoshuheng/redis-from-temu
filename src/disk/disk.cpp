@@ -3,7 +3,7 @@
 //
 #include "../../include/disk/disk.hpp"
 
-namespace core {
+namespace disk {
 DiskManager::DiskManager(io_ctx& ctx, const wal_ptr& wal, const commons::heartbeat_state& hb_state,
     const uint32_t flush_interval)
     : ThreadHeartBeat(hb_state), ctx(ctx), wal(wal), flush_timer(ctx), hb_timer(ctx),
@@ -13,10 +13,21 @@ DiskManager::~DiskManager() {
     shutdown();
 };
 
+bool DiskManager::is_running() const {
+    return state.load(std::memory_order_acquire) == DiskManagerState::RUNNING;
+};
+
+bool DiskManager::is_beating() const {
+    const DiskManagerState curr_state = state.load(std::memory_order_acquire);
+    return curr_state == DiskManagerState::RUNNING ||
+           curr_state == DiskManagerState::STOP_REQUESTED;
+};
+
 boost::asio::awaitable<void> DiskManager::beat_loop() {
-    while (is_running.load(std::memory_order_acquire)) {
+    while (is_beating()) {
         boost::system::error_code ec;
-        hb_state->disk_heartbeat.store(Clock::now(), std::memory_order_relaxed);
+        hb_state->disk_heartbeat.store(
+            Clock::now().time_since_epoch().count(), std::memory_order_relaxed);
         hb_timer.expires_after(std::chrono::milliseconds(beat_interval_ms));
         co_await hb_timer.async_wait(boost::asio::redirect_error(boost::asio::use_awaitable, ec));
         if (ec) {
@@ -29,31 +40,24 @@ boost::asio::awaitable<void> DiskManager::beat_loop() {
     }
 };
 
-boost::asio::awaitable<void> DiskManager::check_loop(const std::chrono::milliseconds timeout) {
-    while (is_running.load(std::memory_order_acquire)) {
+boost::asio::awaitable<void> DiskManager::disk_loop() {
+    while (true) {
+        const DiskManagerState curr_state = state.load(std::memory_order_acquire);
         boost::system::error_code ec;
-        if (const auto last_core_hb = hb_state->core_heartbeat.load(std::memory_order_relaxed);
-            Clock::now() - last_core_hb > timeout) {
-            spdlog::error("redis core timed out, last heartbeat: {}",
-                last_core_hb.time_since_epoch().count());
-        }
-        check_timer.expires_after(std::chrono::milliseconds(check_interval_ms));
-        co_await check_timer.async_wait(
-            boost::asio::redirect_error(boost::asio::use_awaitable, ec));
-        if (ec) {
-            if (ec == boost::asio::error::operation_aborted) {
-                co_return;
-            }
-            spdlog::error(
-                "unexpected error in disk manager heartbeat check loop: {}", ec.message());
+        if (curr_state == DiskManagerState::STOPPED) { // stopped can return
             co_return;
         }
-    }
-};
-
-boost::asio::awaitable<void> DiskManager::disk_loop() {
-    while (is_running.load(std::memory_order_acquire)) {
-        boost::system::error_code ec;
+        if (curr_state ==
+            DiskManagerState::STOP_REQUESTED) { // try to flush whatever is left behind in WAL
+            wal->flush();
+            if (wal->is_empty()) {
+                co_return; // can terminate coroutine, WAL has flushed fully
+            }
+            flush_timer.expires_after(std::chrono::milliseconds(1));
+            co_await flush_timer.async_wait(
+                boost::asio::redirect_error(boost::asio::use_awaitable, ec));
+            continue;
+        };
         wal->flush();
         flush_timer.expires_after(std::chrono::milliseconds(flush_interval));
         co_await flush_timer.async_wait(
@@ -69,18 +73,20 @@ boost::asio::awaitable<void> DiskManager::disk_loop() {
 };
 
 void DiskManager::start() {
-    is_running.store(true, std::memory_order_release);
-    boost::asio::co_spawn(ctx, disk_loop(), boost::asio::detached);
-    boost::asio::co_spawn(ctx, beat_loop(), boost::asio::detached);
-    boost::asio::co_spawn(ctx, check_loop(std::chrono::milliseconds(100)), boost::asio::detached);
+    state.store(DiskManagerState::RUNNING, std::memory_order_release);
+    group.spawn(ctx, disk_loop());
+    group.spawn(ctx, beat_loop());
 };
 
 void DiskManager::shutdown() {
-    is_running.store(false, std::memory_order_release);
+    state.store(DiskManagerState::STOP_REQUESTED, std::memory_order_release);
+    group.stop();
     boost::system::error_code err;
     flush_timer.cancel(err);
     check_timer.cancel(err);
     hb_timer.cancel(err);
+    group.join();
+    state.store(DiskManagerState::STOPPED, std::memory_order_release);
 };
 
-} // namespace core
+} // namespace disk
