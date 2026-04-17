@@ -17,10 +17,7 @@
 
 namespace core {
 using RedisCache = LRUCache<std::string, core::LRUObject>;
-using io_ctx = boost::asio::io_context;
-using timer = boost::asio::steady_timer;
 using wal_ptr = std::shared_ptr<wal::WAL>;
-using run_atomic = std::atomic<bool>;
 class RedisCore final {
   private:
     RedisCache lru_cache;

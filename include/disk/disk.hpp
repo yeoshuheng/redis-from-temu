@@ -10,10 +10,10 @@
 #include "state.hpp"
 
 namespace disk {
-using core::Clock;
-using core::io_ctx;
-using core::timer;
-using core::wal_ptr;
+using Clock = std::chrono::steady_clock;
+using io_ctx = boost::asio::io_context;
+using timer = boost::asio::steady_timer;
+using wal_ptr = std::shared_ptr<wal::WAL>;
 class DiskManager final : commons::ThreadHeartBeat {
     io_ctx& ctx;
     wal_ptr wal;
