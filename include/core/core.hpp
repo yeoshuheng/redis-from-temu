@@ -22,14 +22,9 @@ using timer = boost::asio::steady_timer;
 using wal_ptr = std::shared_ptr<wal::WAL>;
 using run_atomic = std::atomic<bool>;
 class RedisCore final : commons::ThreadHeartBeat {
-    using i_channel = boost::lockfree::spsc_queue<command::Command>;
-    using o_channel = boost::lockfree::spsc_queue<Response>;
-
   private:
     RedisCache lru_cache;
     size_t max_capacity;
-    std::shared_ptr<i_channel> input;
-    std::shared_ptr<o_channel> output;
     wal_ptr wal;
 
     run_atomic is_running{false};
@@ -40,18 +35,15 @@ class RedisCore final : commons::ThreadHeartBeat {
     timer poll_timer;
     timer ttl_timer;
     timer hb_timer;
-    timer check_timer;
 
-    boost::asio::awaitable<void> poll_loop();
     boost::asio::awaitable<void> ttl_loop();
-    void execute(command::Command& cmd);
     boost::asio::awaitable<void> beat_loop() override;
 
   public:
     explicit RedisCore(io_ctx& ctx, size_t max_capacity, const commons::heartbeat_state& hb_state,
-        const wal_ptr& wal, const std::shared_ptr<i_channel>& in_channel,
-        const std::shared_ptr<o_channel>& out_channel, uint32_t poll_interval_ms,
-        uint32_t ttl_interval_ms, uint32_t ttl_budget);
+        const wal_ptr& wal, uint32_t poll_interval_ms, uint32_t ttl_interval_ms,
+        uint32_t ttl_budget);
+    CoreResp execute(command::Command& cmd);
     void start();
     void shutdown();
 };

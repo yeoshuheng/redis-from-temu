@@ -6,8 +6,11 @@
 #define RESP_HPP
 
 namespace core {
-struct Response {
-    std::string data;
+struct CoreResp {
+    enum class RespType { OK = 0, VALUE = 1, NIL = 2, ERROR = 3 };
+    RespType type;
+    std::optional<stored_value> value;
+    std::string message;
 };
 } // namespace core
 

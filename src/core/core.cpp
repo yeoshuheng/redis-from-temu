@@ -10,46 +10,32 @@
 
 namespace core {
 RedisCore::RedisCore(io_ctx& ctx, const size_t max_capacity,
-    const commons::heartbeat_state& hb_state, const wal_ptr& wal,
-    const std::shared_ptr<i_channel>& in_channel, const std::shared_ptr<o_channel>& out_channel,
-    const uint32_t poll_interval_ms, const uint32_t ttl_interval_ms, const uint32_t ttl_budget)
-    : ThreadHeartBeat(hb_state), lru_cache(max_capacity), max_capacity(max_capacity),
-      input(in_channel), output(out_channel), wal(wal), ctx(ctx), poll_interval(poll_interval_ms),
-      ttl_interval(ttl_interval_ms), ttl_budget(ttl_budget), poll_timer(ctx), ttl_timer(ctx),
-      hb_timer(ctx), check_timer(ctx) {};
+    const commons::heartbeat_state& hb_state, const wal_ptr& wal, const uint32_t poll_interval_ms,
+    const uint32_t ttl_interval_ms, const uint32_t ttl_budget)
+    : ThreadHeartBeat(hb_state), lru_cache(max_capacity), max_capacity(max_capacity), wal(wal),
+      ctx(ctx), poll_interval(poll_interval_ms), ttl_interval(ttl_interval_ms),
+      ttl_budget(ttl_budget), poll_timer(ctx), ttl_timer(ctx), hb_timer(ctx) {};
 
-void RedisCore::execute(command::Command& cmd) {
-    std::visit(
-        [this]<typename T>(const T& c) {
+CoreResp RedisCore::execute(command::Command& cmd) {
+    return std::visit(
+        [this]<typename T>(const T& c) -> CoreResp {
             if constexpr (std::is_same_v<T, command::SetCommand>) {
                 lru_cache.add(c.key, core::LRUObject(c.value), c.ttl_ms);
+                return CoreResp{CoreResp::RespType::OK, std::nullopt, "OK"};
             } else if constexpr (std::is_same_v<T, command::DelCommand>) {
-                lru_cache.remove(c.key);
+                if (const bool removed = lru_cache.remove(c.key); !removed) {
+                    return CoreResp{CoreResp::RespType::ERROR, std::nullopt, "ERROR"};
+                };
+                return CoreResp{CoreResp::RespType::OK, std::nullopt, "OK"};
             } else if constexpr (std::is_same_v<T, command::GetCommand>) {
-                lru_cache.get(c.key);
+                const auto v = lru_cache.get(c.key);
+                if (!v.has_value()) {
+                    return CoreResp{CoreResp::RespType::NIL, std::nullopt, "NOT FOUND"};
+                }
+                return CoreResp{CoreResp::RespType::VALUE, v.value().val, "OK"};
             }
         },
         cmd);
-};
-
-boost::asio::awaitable<void> RedisCore::poll_loop() {
-    command::Command cmd;
-    while (is_running.load()) {
-        boost::system::error_code ec;
-        while (input->pop(cmd)) {
-            execute(cmd);
-        }
-        poll_timer.expires_after(std::chrono::milliseconds(poll_interval));
-        // instead of throwing error, redirect into an error_code for cleaner handling.
-        co_await poll_timer.async_wait(boost::asio::redirect_error(boost::asio::use_awaitable, ec));
-        if (ec) {
-            if (ec == boost::asio::error::operation_aborted) {
-                co_return;
-            }
-            spdlog::error("unexpected error in redis core poll loop: {}", ec.message());
-            co_return;
-        }
-    }
 };
 
 boost::asio::awaitable<void> RedisCore::ttl_loop() {
@@ -71,7 +57,6 @@ boost::asio::awaitable<void> RedisCore::ttl_loop() {
 
 void RedisCore::start() {
     is_running.store(true);
-    boost::asio::co_spawn(ctx, poll_loop(), boost::asio::detached);
     boost::asio::co_spawn(ctx, ttl_loop(), boost::asio::detached);
     boost::asio::co_spawn(ctx, beat_loop(), boost::asio::detached);
 };
@@ -79,16 +64,15 @@ void RedisCore::start() {
 void RedisCore::shutdown() {
     is_running.store(false);
     boost::system::error_code err;
-    poll_timer.cancel(err);
     ttl_timer.cancel(err);
-    check_timer.cancel(err);
     hb_timer.cancel(err);
 };
 
 boost::asio::awaitable<void> RedisCore::beat_loop() {
     while (is_running.load()) {
         boost::system::error_code ec;
-        hb_state->core_heartbeat.store(Clock::now().time_since_epoch().count(), std::memory_order_relaxed);
+        hb_state->core_heartbeat.store(
+            Clock::now().time_since_epoch().count(), std::memory_order_relaxed);
         hb_timer.expires_after(std::chrono::milliseconds(beat_interval_ms));
         co_await hb_timer.async_wait(boost::asio::redirect_error(boost::asio::use_awaitable, ec));
         if (ec) {
