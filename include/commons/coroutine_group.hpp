@@ -6,8 +6,7 @@
 #define COROUTINE_GROUP_HPP
 
 #include <atomic>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/impl/co_spawn.hpp>
+#include <boost/asio.hpp>
 #include <condition_variable>
 #include <mutex>
 
@@ -15,7 +14,9 @@
 
 namespace commons {
 template <typename T>
-concept void_awaitable = std::same_as<std::decay_t<T>, boost::asio::awaitable<void>>;
+concept void_awaitable_factory = requires(T t) {
+    { t() } -> std::same_as<boost::asio::awaitable<void>>;
+};
 class CoroutineGroup {
     std::atomic<int> n_active{0};
     std::atomic<bool> stopping{false};
@@ -36,15 +37,16 @@ class CoroutineGroup {
         join();
     }
 
-    template <void_awaitable T> void spawn(boost::asio::io_context& ctx, T&& coroutine) {
+    template <void_awaitable_factory T>
+    void spawn(boost::asio::io_context& ctx, T&& coroutine_factory) {
         if (is_stopping())
             return;
         n_active.fetch_add(1, std::memory_order_acq_rel);
         boost::asio::co_spawn(
             ctx,
-            [this, cr = std::move(coroutine)]() -> boost::asio::awaitable<void> {
+            [this, crf = std::forward<T>(coroutine_factory)]() -> boost::asio::awaitable<void> {
                 coroutine_guard guard{n_active, cv};
-                co_await cr;
+                co_await crf();
             },
             boost::asio::detached);
     };

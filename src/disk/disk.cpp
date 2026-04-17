@@ -74,8 +74,8 @@ boost::asio::awaitable<void> DiskManager::disk_loop() {
 
 void DiskManager::start() {
     state.store(DiskManagerState::RUNNING, std::memory_order_release);
-    group.spawn(ctx, disk_loop());
-    group.spawn(ctx, beat_loop());
+    group.spawn(ctx, [&]() -> boost::asio::awaitable<void> { co_return co_await disk_loop(); });
+    group.spawn(ctx, [&]() -> boost::asio::awaitable<void> { co_return co_await beat_loop(); });
 };
 
 void DiskManager::shutdown() {
