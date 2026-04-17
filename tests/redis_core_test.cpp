@@ -1,20 +1,18 @@
+#include <chrono>
 #include <gtest/gtest.h>
 #include <thread>
-#include <chrono>
 
-#include "../include/core/core.hpp"
 #include "../include/command/command.hpp"
+#include "../include/core/core.hpp"
 
 using namespace core;
 
 class RedisCoreTest : public ::testing::Test {
-protected:
+  protected:
     wal_ptr wal = nullptr; // stub if unused
     std::unique_ptr<RedisCore> core;
 
-    void SetUp() override {
-        core = std::make_unique<RedisCore>(100, wal, 1000);
-    }
+    void SetUp() override { core = std::make_unique<RedisCore>(100, wal, 1000); }
 };
 
 TEST_F(RedisCoreTest, SetThenGetReturnsValue) {

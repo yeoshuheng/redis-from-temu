@@ -9,7 +9,7 @@
 using namespace wal;
 
 class WALCodecTest : public ::testing::Test {
-protected:
+  protected:
     static stored_value roundtrip(const stored_value& val) {
         const std::string serialized = WALCodec::serialize_stored_value(val);
 
