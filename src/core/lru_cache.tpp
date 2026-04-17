@@ -7,8 +7,11 @@
 #include <format>
 
 namespace core {
+constexpr uint32_t EVICT_BUDGET = 10;
 template <typename K, typename V>
 LRUCache<K, V>::LRUCache(const size_t capacity) : capacity(capacity) {
+    if (capacity == 0)
+        throw std::runtime_error("lru cache must have at least capacity 1");
     head = alloc.allocate(1);
     alloc.construct(head);
 
@@ -23,9 +26,9 @@ template <typename K, typename V> LRUCache<K, V>::~LRUCache() {
     for (auto& [_, node] : cache) {
         deallocate(node);
     }
+    cache.clear();
     deallocate(head);
     deallocate(tail);
-    cache.clear();
 };
 
 template <typename K, typename V> void LRUCache<K, V>::disconnect(n_ptr node) {
@@ -34,16 +37,16 @@ template <typename K, typename V> void LRUCache<K, V>::disconnect(n_ptr node) {
     }
     const auto n_prev = node->prev;
     const auto n_next = node->next;
-    sanitise(node);
     if (n_prev != nullptr) {
         n_prev->next = n_next;
     }
     if (n_next != nullptr) {
         n_next->prev = n_prev;
     }
+    sanitise(node);
 };
 
-template <typename K, typename V> void LRUCache<K, V>::clear() {
+template <typename K, typename V> void LRUCache<K, V>::evict_till_capacity() {
     while (cache.size() >= capacity) {
         const auto to_evict = head->next;
         if (to_evict == tail) {
@@ -85,7 +88,8 @@ void LRUCache<K, V>::add(const K& key, const V& value, const uint32_t ttl_ms) {
         node->expired_t.reset();
         disconnect(node);
     } else {
-        clear();
+        remove_expired(EVICT_BUDGET);
+        evict_till_capacity();
         node = alloc.allocate(1);
         alloc.construct(node, key, value);
         cache.emplace(key, node);
@@ -96,35 +100,36 @@ void LRUCache<K, V>::add(const K& key, const V& value, const uint32_t ttl_ms) {
     add_to_tail(node);
 };
 
-template <typename K, typename V> V& LRUCache<K, V>::get(const K& key) {
+template <typename K, typename V> std::optional<V> LRUCache<K, V>::get(const K& key) {
     const auto it = cache.find(key);
     if (it == cache.end()) {
-        spdlog::error("cannot find key: {}", key);
-        throw std::runtime_error(std::format("unable to find node with key: {}", key));
+        spdlog::debug("cannot find key: {}", key);
+        return std::nullopt;
     }
     const auto node = it->second;
     if (node->expired_t.has_value() && Clock::now() >= *node->expired_t) {
-        spdlog::error("node with key: {} has expired", key);
+        spdlog::debug("node with key: {} has expired", key);
         cache.erase(it);
         disconnect(node);
         deallocate(node);
-        throw std::runtime_error(std::format("the node with key: {} has expired", key));
+        return std::nullopt;
     }
     disconnect(node);
     add_to_tail(node);
     return node->value;
 };
 
-template <typename K, typename V> void LRUCache<K, V>::remove(const K& key) {
+template <typename K, typename V> bool LRUCache<K, V>::remove(const K& key) {
     const auto it = cache.find(key);
     if (it == cache.end()) {
-        spdlog::error("cannot find key: {}", key);
-        throw std::runtime_error(std::format("unable to find node with key: {}", key));
+        spdlog::debug("cannot find key: {}", key);
+        return false;
     }
     const auto node = it->second;
     disconnect(node);
     cache.erase(key);
     deallocate(node);
+    return true;
 };
 
 template <typename K, typename V> void LRUCache<K, V>::remove_expired(const uint32_t budget) {

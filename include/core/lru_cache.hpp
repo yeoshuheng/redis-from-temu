@@ -40,7 +40,7 @@ template <typename K, typename V> class LRUCache {
 
     void disconnect(n_ptr node);
     void add_to_tail(n_ptr node);
-    void clear();
+    void evict_till_capacity();
     void deallocate(n_ptr node);
     static void sanitise(n_ptr node);
 
@@ -50,8 +50,8 @@ template <typename K, typename V> class LRUCache {
     LRUCache(const LRUCache&) = delete;
     LRUCache& operator=(const LRUCache&) = delete;
     void add(const K& key, const V& value, uint32_t ttl_ms = 0);
-    V& get(const K& key);
-    void remove(const K& key);
+    std::optional<V> get(const K& key);
+    bool remove(const K& key);
     void remove_expired(uint32_t budget = 0);
 };
 } // namespace core
