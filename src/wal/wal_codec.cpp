@@ -118,6 +118,7 @@ command::Command WALCodec::deserialize(const std::string& str) {
 
     ensure(ptr, end, sizeof(uint32_t));
     uint32_t args_size = utils::read_u32(ptr);
+    ensure(ptr, end, args_size);
     const char* args_end = ptr + args_size;
 
     spdlog::debug("recv: {}, type: {}, arg_size: {}", str, type, args_size);
