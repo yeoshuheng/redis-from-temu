@@ -12,9 +12,12 @@ TEST(WALCodecTest, SerializeDeserialize_Int64) {
     stored_value val = int64_t(123456789);
 
     std::string serialized = WALCodec::serialize_stored_value(val);
-    const char* ptr = serialized.data();
 
-    stored_value out = WALCodec::deserialize_stored_value(ptr);
+    const char* begin = serialized.data();
+    const char* end = begin + serialized.size();
+    const char* ptr = begin;
+
+    stored_value out = WALCodec::deserialize_stored_value(ptr, end);
 
     ASSERT_TRUE(std::holds_alternative<int64_t>(out));
     EXPECT_EQ(std::get<int64_t>(out), 123456789);
@@ -24,9 +27,12 @@ TEST(WALCodecTest, SerializeDeserialize_Double) {
     stored_value val = double(3.1415926535);
 
     std::string serialized = WALCodec::serialize_stored_value(val);
-    const char* ptr = serialized.data();
 
-    stored_value out = WALCodec::deserialize_stored_value(ptr);
+    const char* begin = serialized.data();
+    const char* end = begin + serialized.size();
+    const char* ptr = begin;
+
+    stored_value out = WALCodec::deserialize_stored_value(ptr, end);
 
     ASSERT_TRUE(std::holds_alternative<double>(out));
     EXPECT_DOUBLE_EQ(std::get<double>(out), 3.1415926535);
@@ -36,9 +42,12 @@ TEST(WALCodecTest, SerializeDeserialize_Float) {
     stored_value val = float(1.2345f);
 
     std::string serialized = WALCodec::serialize_stored_value(val);
-    const char* ptr = serialized.data();
 
-    stored_value out = WALCodec::deserialize_stored_value(ptr);
+    const char* begin = serialized.data();
+    const char* end = begin + serialized.size();
+    const char* ptr = begin;
+
+    stored_value out = WALCodec::deserialize_stored_value(ptr, end);
 
     ASSERT_TRUE(std::holds_alternative<float>(out));
     EXPECT_FLOAT_EQ(std::get<float>(out), 1.2345f);
@@ -48,9 +57,12 @@ TEST(WALCodecTest, SerializeDeserialize_String) {
     stored_value val = std::string("hello world");
 
     std::string serialized = WALCodec::serialize_stored_value(val);
-    const char* ptr = serialized.data();
 
-    stored_value out = WALCodec::deserialize_stored_value(ptr);
+    const char* begin = serialized.data();
+    const char* end = begin + serialized.size();
+    const char* ptr = begin;
+
+    stored_value out = WALCodec::deserialize_stored_value(ptr, end);
 
     ASSERT_TRUE(std::holds_alternative<std::string>(out));
     EXPECT_EQ(std::get<std::string>(out), "hello world");
@@ -60,9 +72,12 @@ TEST(WALCodecTest, SerializeDeserialize_EmptyString) {
     stored_value val = std::string("");
 
     std::string serialized = WALCodec::serialize_stored_value(val);
-    const char* ptr = serialized.data();
 
-    stored_value out = WALCodec::deserialize_stored_value(ptr);
+    const char* begin = serialized.data();
+    const char* end = begin + serialized.size();
+    const char* ptr = begin;
+
+    stored_value out = WALCodec::deserialize_stored_value(ptr, end);
 
     ASSERT_TRUE(std::holds_alternative<std::string>(out));
     EXPECT_EQ(std::get<std::string>(out), "");
@@ -162,10 +177,12 @@ TEST(WALCodecTest, PointerAdvancesCorrectly) {
 
     std::string combined = s1 + s2;
 
-    const char* ptr = combined.data();
+    const char* begin = combined.data();
+    const char* end = begin + combined.size();
+    const char* ptr = begin;
 
-    auto out1 = WALCodec::deserialize_stored_value(ptr);
-    auto out2 = WALCodec::deserialize_stored_value(ptr);
+    auto out1 = WALCodec::deserialize_stored_value(ptr, end);
+    auto out2 = WALCodec::deserialize_stored_value(ptr, end);
 
     EXPECT_EQ(std::get<int64_t>(out1), 1);
     EXPECT_DOUBLE_EQ(std::get<double>(out2), 2.0);

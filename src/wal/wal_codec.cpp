@@ -6,6 +6,12 @@
 #include "spdlog/spdlog.h"
 
 namespace wal {
+void WALCodec::ensure(const char* ptr, const char* end, const size_t n) {
+    if (ptr + n > end) {
+        throw std::runtime_error("command data is corrupted, WAL is reading out of bounds");
+    }
+};
+
 std::string WALCodec::serialize_stored_value(const stored_value& val) {
     std::string serialized;
     std::visit(
@@ -33,29 +39,35 @@ std::string WALCodec::serialize_stored_value(const stored_value& val) {
     return serialized;
 };
 
-core::stored_value WALCodec::deserialize_stored_value(const char*& str) {
+core::stored_value WALCodec::deserialize_stored_value(const char*& str, const char* end) {
+    ensure(str, end, 1);
     const uint8_t type = *str++;
+    ensure(str, end, sizeof(uint32_t));
     const uint32_t size = utils::read_u32(str);
     switch (static_cast<WALValue>(type)) {
     case WALValue::INT64: {
+        ensure(str, end, sizeof(int64_t));
         int64_t v;
         std::memcpy(&v, str, sizeof(v));
         str += sizeof(v);
         return v;
     }
     case WALValue::DOUBLE: {
+        ensure(str, end, sizeof(double));
         double v;
         std::memcpy(&v, str, sizeof(v));
         str += sizeof(v);
         return v;
     }
     case WALValue::FLOAT: {
+        ensure(str, end, sizeof(float));
         float v;
         std::memcpy(&v, str, sizeof(v));
         str += sizeof(v);
         return v;
     }
     case WALValue::STRING: {
+        ensure(str, end, size);
         std::string v(str, size);
         str += size;
         return v;
@@ -99,46 +111,48 @@ std::string WALCodec::serialize(const command::Command& cmd) {
 }
 
 command::Command WALCodec::deserialize(const std::string& str) {
-    const char* begin = str.data();
-    const char* ptr = begin;
+    const char* ptr = str.data();
+    const char* end = ptr + str.size();
+    ensure(ptr, end, 1);
     uint8_t type = *ptr++; // first byte is type
-    uint32_t args_size = utils::read_u32(ptr);
-    const char* end = ptr + args_size;
 
-    auto check = [&](const char* p) {
-        if (p > end)
-            throw std::runtime_error("WAL data corrupted, data is out-of-bound");
-    };
+    ensure(ptr, end, sizeof(uint32_t));
+    uint32_t args_size = utils::read_u32(ptr);
+    const char* args_end = ptr + args_size;
 
     spdlog::debug("recv: {}, type: {}, arg_size: {}", str, type, args_size);
     switch (static_cast<WALCommand>(type)) {
     case WALCommand::PING:
         return command::PingCommand{};
     case WALCommand::SET: {
+        ensure(ptr, args_end, sizeof(uint32_t));
         const uint32_t key_len = utils::read_u32(ptr);
-        check(ptr);
+
+        ensure(ptr, args_end, key_len);
         std::string key(ptr, key_len);
         ptr += key_len;
-        check(ptr);
 
-        const stored_value deserialized_value = deserialize_stored_value(ptr);
-        check(ptr);
+        const stored_value deserialized_value = deserialize_stored_value(ptr, args_end);
 
+        ensure(ptr, args_end, sizeof(uint32_t));
         const uint32_t ttl = utils::read_u32(ptr);
-        check(ptr);
 
         return command::SetCommand{std::move(key), deserialized_value, ttl};
     }
     case WALCommand::DEL: {
+        ensure(ptr, args_end, sizeof(uint32_t));
         const uint32_t dkey_len = utils::read_u32(ptr);
-        check(ptr);
+
+        ensure(ptr, args_end, dkey_len);
         std::string dkey(ptr, dkey_len);
         ptr += dkey_len;
         return command::DelCommand{std::move(dkey)};
     }
     case WALCommand::GET: {
+        ensure(ptr, args_end, sizeof(uint32_t));
         const uint32_t gkey_len = utils::read_u32(ptr);
-        check(ptr);
+
+        ensure(ptr, args_end, gkey_len);
         std::string gkey(ptr, gkey_len);
         ptr += gkey_len;
         return command::GetCommand{std::move(gkey)};
