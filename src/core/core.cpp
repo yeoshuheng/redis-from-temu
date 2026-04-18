@@ -3,16 +3,13 @@
 //
 
 #include "../../include/core/core.hpp"
-
-#include <spdlog/spdlog.h>
-
-#include <utility>
+#include "../../include/resp/resp.hpp"
 
 namespace core {
-RedisCore::RedisCore(const size_t max_capacity, const wal_ptr& wal, const uint32_t ttl_budget)
+DBCore::DBCore(const size_t max_capacity, const wal_ptr& wal, const uint32_t ttl_budget)
     : lru_cache(max_capacity), max_capacity(max_capacity), ttl_budget(ttl_budget), wal(wal) {};
 
-CoreResp RedisCore::execute(command::Command& cmd) {
+CoreResp DBCore::execute(command::Command& cmd) {
     persist(cmd);
     return std::visit(
         [this]<typename T>(const T& c) -> CoreResp {
@@ -38,7 +35,7 @@ CoreResp RedisCore::execute(command::Command& cmd) {
         cmd);
 };
 
-bool RedisCore::should_persist(const command::Command& cmd) const {
+bool DBCore::should_persist(const command::Command& cmd) const {
     return std::visit(
         [this]<typename T>(const T& c) -> bool {
             if constexpr (std::is_same_v<T, command::SetCommand> ||
@@ -50,13 +47,13 @@ bool RedisCore::should_persist(const command::Command& cmd) const {
         cmd);
 }
 
-void RedisCore::persist(const command::Command& cmd) const {
+void DBCore::persist(const command::Command& cmd) const {
     if (wal && should_persist(cmd)) {
         wal->append(cmd);
     }
 }
 
-void RedisCore::evict() {
+void DBCore::evict() {
     lru_cache.remove_expired(ttl_budget);
 };
 } // namespace core

@@ -6,6 +6,7 @@
 #define DISK_HPP
 
 #include "../../include/commons/coroutine_group.hpp"
+#include "../commons/heartbeat.hpp"
 #include "../core/core.hpp"
 #include "state.hpp"
 

@@ -6,21 +6,20 @@
 #define CORE_HPP
 
 #include <boost/asio.hpp>
-#include <boost/lockfree/spsc_queue.hpp>
 
 #include "../command/parser.hpp"
-#include "../commons/heartbeat.hpp"
+#include "../resp/resp.hpp"
 #include "../wal/wal.hpp"
 #include "lru_cache.hpp"
 #include "object.hpp"
-#include "resp.hpp"
 
 namespace core {
-using RedisCache = LRUCache<std::string, core::LRUObject>;
+using DBCache = LRUCache<std::string, core::LRUObject>;
 using wal_ptr = std::shared_ptr<wal::WAL>;
-class RedisCore final {
+using response::CoreResp;
+class DBCore final {
   private:
-    RedisCache lru_cache;
+    DBCache lru_cache;
     size_t max_capacity;
     uint32_t ttl_budget;
     wal_ptr wal;
@@ -29,7 +28,7 @@ class RedisCore final {
     void persist(const command::Command& cmd) const;
 
   public:
-    RedisCore(size_t max_capacity, const wal_ptr& wal, uint32_t ttl_budget);
+    DBCore(size_t max_capacity, const wal_ptr& wal, uint32_t ttl_budget);
 
     CoreResp execute(command::Command& cmd);
     void evict();

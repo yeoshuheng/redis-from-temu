@@ -5,6 +5,8 @@
 #ifndef OBJECT_HPP
 #define OBJECT_HPP
 
+#include <string>
+
 namespace core {
 using stored_value = std::variant<int64_t, double, float, std::string>;
 struct LRUObject {
