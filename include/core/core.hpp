@@ -22,8 +22,11 @@ class RedisCore final {
   private:
     RedisCache lru_cache;
     size_t max_capacity;
-    wal_ptr wal;
     uint32_t ttl_budget;
+    wal_ptr wal;
+
+    bool should_persist(const command::Command& cmd) const;
+    void persist(const command::Command& cmd) const;
 
   public:
     RedisCore(size_t max_capacity, const wal_ptr& wal, uint32_t ttl_budget);

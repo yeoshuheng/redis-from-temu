@@ -10,9 +10,10 @@
 
 namespace core {
 RedisCore::RedisCore(const size_t max_capacity, const wal_ptr& wal, const uint32_t ttl_budget)
-    : lru_cache(max_capacity), max_capacity(max_capacity), wal(wal), ttl_budget(ttl_budget) {};
+    : lru_cache(max_capacity), max_capacity(max_capacity), ttl_budget(ttl_budget), wal(wal) {};
 
 CoreResp RedisCore::execute(command::Command& cmd) {
+    persist(cmd);
     return std::visit(
         [this]<typename T>(const T& c) -> CoreResp {
             if constexpr (std::is_same_v<T, command::SetCommand>) {
@@ -29,11 +30,31 @@ CoreResp RedisCore::execute(command::Command& cmd) {
                     return CoreResp{CoreResp::RespType::NIL, std::nullopt, "NOT FOUND"};
                 }
                 return CoreResp{CoreResp::RespType::VALUE, v.value().val, "OK"};
+            } else if constexpr (std::is_same_v<T, command::PingCommand>) {
+                return CoreResp{CoreResp::RespType::OK, std::nullopt, "OK"};
             }
             return CoreResp{CoreResp::RespType::ERROR, std::nullopt, "UNRECOGNIZED COMMAND"};
         },
         cmd);
 };
+
+bool RedisCore::should_persist(const command::Command& cmd) const {
+    return std::visit(
+        [this]<typename T>(const T& c) -> bool {
+            if constexpr (std::is_same_v<T, command::SetCommand> ||
+                          std::is_same_v<T, command::DelCommand>) {
+                return true;
+            }
+            return false;
+        },
+        cmd);
+}
+
+void RedisCore::persist(const command::Command& cmd) const {
+    if (wal && should_persist(cmd)) {
+        wal->append(cmd);
+    }
+}
 
 void RedisCore::evict() {
     lru_cache.remove_expired(ttl_budget);

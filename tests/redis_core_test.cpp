@@ -9,7 +9,7 @@ using namespace core;
 
 class RedisCoreTest : public ::testing::Test {
   protected:
-    wal_ptr wal = nullptr; // stub if unused
+    wal_ptr wal = nullptr;
     std::unique_ptr<RedisCore> core;
 
     void SetUp() override { core = std::make_unique<RedisCore>(100, wal, 1000); }
