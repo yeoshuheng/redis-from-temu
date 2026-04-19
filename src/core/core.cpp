@@ -7,22 +7,23 @@
 
 namespace core {
 DBCore::DBCore(const size_t max_capacity, const wal_ptr& wal, const uint32_t ttl_budget)
-    : lru_cache(max_capacity), max_capacity(max_capacity), ttl_budget(ttl_budget), wal(wal) {};
+    : lru_cache(std::make_unique<DBCache>(max_capacity)), max_capacity(max_capacity),
+      ttl_budget(ttl_budget), wal(wal) {};
 
 CoreResp DBCore::execute(command::Command& cmd) {
     persist(cmd);
     return std::visit(
         [this]<typename T>(const T& c) -> CoreResp {
             if constexpr (std::is_same_v<T, command::SetCommand>) {
-                lru_cache.add(c.key, core::LRUObject(c.value), c.ttl_ms);
+                lru_cache->add(c.key, core::LRUObject(c.value), c.ttl_ms);
                 return CoreResp{CoreResp::RespType::OK, std::nullopt, "OK"};
             } else if constexpr (std::is_same_v<T, command::DelCommand>) {
-                if (const bool removed = lru_cache.remove(c.key); !removed) {
+                if (const bool removed = lru_cache->remove(c.key); !removed) {
                     return CoreResp{CoreResp::RespType::ERROR, std::nullopt, "ERROR"};
                 };
                 return CoreResp{CoreResp::RespType::OK, std::nullopt, "OK"};
             } else if constexpr (std::is_same_v<T, command::GetCommand>) {
-                const auto v = lru_cache.get(c.key);
+                const auto v = lru_cache->get(c.key);
                 if (!v.has_value()) {
                     return CoreResp{CoreResp::RespType::NIL, std::nullopt, "NOT FOUND"};
                 }
@@ -54,6 +55,6 @@ void DBCore::persist(const command::Command& cmd) const {
 }
 
 void DBCore::evict() {
-    lru_cache.remove_expired(ttl_budget);
+    lru_cache->remove_expired(ttl_budget);
 };
 } // namespace core

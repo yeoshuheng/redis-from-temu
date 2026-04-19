@@ -15,16 +15,17 @@
 
 namespace core {
 using DBCache = LRUCache<std::string, core::LRUObject>;
+using cache_ptr = std::unique_ptr<DBCache>;
 using wal_ptr = std::shared_ptr<wal::WAL>;
 using response::CoreResp;
 class DBCore final {
   private:
-    DBCache lru_cache;
+    cache_ptr lru_cache;
     size_t max_capacity;
     uint32_t ttl_budget;
     wal_ptr wal;
 
-    bool should_persist(const command::Command& cmd) const;
+    [[nodiscard]] bool should_persist(const command::Command& cmd) const;
     void persist(const command::Command& cmd) const;
 
   public:

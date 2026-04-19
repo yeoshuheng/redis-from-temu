@@ -49,6 +49,8 @@ template <typename K, typename V> class LRUCache {
     ~LRUCache();
     LRUCache(const LRUCache&) = delete;
     LRUCache& operator=(const LRUCache&) = delete;
+    LRUCache(const LRUCache&&) = delete;
+    LRUCache& operator=(const LRUCache&&) = delete;
     void add(const K& key, const V& value, uint32_t ttl_ms = 0);
     std::optional<V> get(const K& key);
     bool remove(const K& key);
