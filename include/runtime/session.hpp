@@ -27,7 +27,6 @@ class DBSession final {
 
   public:
     DBSession(socket sock, const core_executor& core);
-    ~DBSession();
     boost::asio::awaitable<void> run();
     void close();
 };
