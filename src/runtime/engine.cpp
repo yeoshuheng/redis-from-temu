@@ -4,7 +4,7 @@
 #include "../../include/runtime/engine.hpp"
 
 namespace runtime {
-DBEngine::DBEngine(const std::string host, uint8_t port, core::DBCore&& core)
+DBEngine::DBEngine(const std::string &host, uint8_t port, core::DBCore&& core)
     : accept(ctx, {boost::asio::ip::make_address(std::move(host)), port}), core(std::move(core)) {};
 
 void DBEngine::run() {
