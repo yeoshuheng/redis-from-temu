@@ -78,6 +78,7 @@ void DiskManager::start() {
         disk_ctx, [&]() -> boost::asio::awaitable<void> { co_return co_await disk_loop(); });
     group.spawn(
         disk_ctx, [&]() -> boost::asio::awaitable<void> { co_return co_await beat_loop(); });
+    disk_thread = std::thread([this] { disk_ctx.run(); });
 };
 
 void DiskManager::shutdown() {

@@ -4,16 +4,35 @@
 #include "../../include/runtime/engine.hpp"
 
 namespace runtime {
-DBEngine::DBEngine(const std::string& host, uint8_t port, core::DBCore&& core)
-    : accept(ctx, {boost::asio::ip::make_address(std::move(host)), port}), core(std::move(core)) {};
+DBEngine::DBEngine(const std::string& host, uint8_t port, std::unique_ptr<core::DBCore> core,
+    std::unique_ptr<disk::DiskManager> disk_manager)
+    : accept(core_ctx, {boost::asio::ip::make_address(std::move(host)), port}),
+      core(std::move(core)), disk_manager(std::move(disk_manager)) {};
 
 void DBEngine::run() {
+    if (auto expected = EngineState::STOPPED;
+        !state.compare_exchange_strong(expected, EngineState::RUNNING)) {
+        return;
+    }
+    disk_manager->start();
     accept_loop();
-    ctx.run();
+    core_ctx.run();
 };
 
+void DBEngine::close() {
+    if (auto expected = EngineState::RUNNING;
+        !state.compare_exchange_strong(expected, EngineState::STOP_REQUESTED)) {
+        return;
+    }
+    boost::system::error_code ec;
+    accept.close(ec);
+    core_ctx.stop();
+    disk_manager->shutdown();
+    state.store(EngineState::STOP_REQUESTED, std::memory_order_release);
+}
+
 void DBEngine::accept_loop() {
-    auto sock = std::make_shared<boost::asio::ip::tcp::socket>(ctx);
+    auto sock = std::make_shared<boost::asio::ip::tcp::socket>(core_ctx);
     accept.async_accept(*sock, [this, sock](const boost::system::error_code& ec) {
         const auto id = curr_id.fetch_add(1);
         if (!ec) {
@@ -31,8 +50,11 @@ void DBEngine::accept_loop() {
 }
 
 void DBEngine::start_write(session_id id) {
+    if (state.load(std::memory_order_acquire) != EngineState::RUNNING) {
+        return;
+    }
     const auto& session = sessions.at(id);
-    boost::asio::async_write(session->socket, boost::asio::buffer(session->write_buffer),
+    boost::asio::async_write(*session->socket, boost::asio::buffer(session->write_buffer),
         [this, id](const boost::system::error_code& ec, std::size_t) {
             if (ec) {
                 sessions.erase(id);
@@ -45,6 +67,9 @@ void DBEngine::start_write(session_id id) {
 };
 
 void DBEngine::start_read(session_id id) {
+    if (state.load(std::memory_order_acquire) != EngineState::RUNNING) {
+        return;
+    }
     const auto& session = sessions.at(id);
     session->socket->async_read_some(boost::asio::buffer(session->read_buffer),
         [this, id](const boost::system::error_code& ec, const std::size_t bytes_transferred) {
@@ -61,7 +86,7 @@ void DBEngine::start_read(session_id id) {
                     continue;
                 }
                 command::Command cmd = cmd_opt.value();
-                const auto result = core.execute(cmd);
+                const auto result = core->execute(cmd);
                 s->write_buffer.append(std::move(serializer.serialize(result)));
             }
             if (!s->write_buffer.empty()) {

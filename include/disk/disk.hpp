@@ -18,6 +18,7 @@ using wal_ptr = std::shared_ptr<wal::WAL>;
 class DiskManager final : commons::ThreadHeartBeat {
     io_ctx disk_ctx;
     wal_ptr wal;
+    std::thread disk_thread;
     std::atomic<DiskManagerState> state{DiskManagerState::STOPPED};
     commons::CoroutineGroup group{};
 
