@@ -89,6 +89,11 @@ void DiskManager::shutdown() {
     check_timer.cancel(err);
     hb_timer.cancel(err);
     group.join();
+    wal->flush();
+    disk_ctx.stop();
+    if (disk_thread.joinable()) {
+        disk_thread.join();
+    }
     state.store(DiskManagerState::STOPPED, std::memory_order_release);
 };
 
