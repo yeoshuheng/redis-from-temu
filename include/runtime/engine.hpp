@@ -29,7 +29,7 @@ class DBEngine {
     void start_write(session_id id);
 
   public:
-    DBEngine(const std::string &host, uint8_t port, core::DBCore&& core);
+    DBEngine(const std::string& host, uint8_t port, core::DBCore&& core);
     void run();
 };
 } // namespace runtime

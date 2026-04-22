@@ -4,7 +4,7 @@
 #include "../../include/runtime/engine.hpp"
 
 namespace runtime {
-DBEngine::DBEngine(const std::string &host, uint8_t port, core::DBCore&& core)
+DBEngine::DBEngine(const std::string& host, uint8_t port, core::DBCore&& core)
     : accept(ctx, {boost::asio::ip::make_address(std::move(host)), port}), core(std::move(core)) {};
 
 void DBEngine::run() {
@@ -33,7 +33,7 @@ void DBEngine::accept_loop() {
 void DBEngine::start_write(session_id id) {
     const auto& session = sessions.at(id);
     boost::asio::async_write(session->socket, boost::asio::buffer(session->write_buffer),
-        [this, id](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+        [this, id](const boost::system::error_code& ec, std::size_t) {
             if (ec) {
                 sessions.erase(id);
                 spdlog::error("failed to write to session with id={}, {}", id, ec.message());
@@ -64,7 +64,6 @@ void DBEngine::start_read(session_id id) {
                 const auto result = core.execute(cmd);
                 s->write_buffer.append(std::move(serializer.serialize(result)));
             }
-
             if (!s->write_buffer.empty()) {
                 start_write(id);
             } else {
