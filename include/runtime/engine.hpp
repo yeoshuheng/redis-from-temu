@@ -28,6 +28,7 @@ class DBEngine {
 
     std::atomic<EngineState> state{EngineState::STOPPED};
 
+    std::shared_ptr<wal::WAL> wal;
     std::shared_ptr<core::DBCore> core;
     std::shared_ptr<disk::DiskManager> disk;
 
@@ -38,7 +39,7 @@ class DBEngine {
     boost::asio::awaitable<void> accept_loop();
     boost::asio::awaitable<void> term_loop();
     void stop();
-
+    void recover();
   public:
     explicit DBEngine(EngineConfig  config);
     ~DBEngine();

@@ -6,6 +6,8 @@
 #include "spdlog/spdlog.h"
 #include <zlib.h>
 
+#include "include/resp/resp.hpp"
+
 namespace wal {
 WAL::WAL(const std::string& path) : path(path) {
     // https://en.cppreference.com/w/cpp/io/c/fopen.html
@@ -14,6 +16,8 @@ WAL::WAL(const std::string& path) : path(path) {
     if (!file) {
         spdlog::warn(std::format("failed to find WAL file at {}, starting new file", path));
         file = fopen(path.c_str(), "w+b");
+    } else {
+        spdlog::info("found existing WAL file at {}", path);
     }
     setvbuf(file, nullptr, _IOFBF, RAM_BUFFER_BYTES);
     fd = fileno(file);
@@ -79,7 +83,7 @@ void WAL::recover(std::function<void(command::Command)> const& replay) {
             spdlog::warn("WAL corrupted, mismatch in checksum");
             break;
         }
-        replay(codec.deserialize(command));
+        replay(wal::WALCodec::deserialize(command));
     }
     // truncates where data is corrupted.
     fflush(file);

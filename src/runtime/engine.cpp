@@ -67,12 +67,12 @@ boost::asio::awaitable<void> DBEngine::disk_manager_loop() {
     }
 };
 
-DBEngine::DBEngine(EngineConfig  config)
+DBEngine::DBEngine(EngineConfig config)
     : cfg(std::move(config)),
       accept(ctx, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), cfg.port)),
       disk_check_timer(ctx) {
     accept.set_option(boost::asio::socket_base::reuse_address(true));
-    auto wal = std::make_shared<wal::WAL>(cfg.wal_path);
+    wal = std::make_shared<wal::WAL>(cfg.wal_path);
     core = std::make_shared<core::DBCore>(cfg.db_max_capacity, wal, cfg.ttl_budget);
     hb_state = std::make_shared<commons::ThreadHeartBeatState>();
     disk = std::make_shared<disk::DiskManager>(wal, hb_state, cfg.disk_flush_interval_ms);
@@ -93,11 +93,21 @@ void DBEngine::stop() {
     spdlog::info("engine stopped");
 };
 
+void DBEngine::recover() {
+    spdlog::info("restoring engine state...");
+    const std::function<void(command::Command)> func = [this](command::Command cmd) -> void {
+        core->execute(cmd);
+    };
+    wal->recover(func);
+    spdlog::info("engine recovered");
+};
+
 void DBEngine::start() {
     if (state.exchange(EngineState::RUNNING, std::memory_order_acquire) == EngineState::RUNNING) {
         return;
     }
     spdlog::info("starting engine...");
+    recover();
     disk->start();
     group.spawn(ctx, [this] { return accept_loop(); });
     group.spawn(ctx, [this] { return term_loop(); });
