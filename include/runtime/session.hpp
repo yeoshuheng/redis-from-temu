@@ -7,8 +7,8 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <memory>
 
-#include "include/core/core.hpp"
-#include "include/resp/serializer.hpp"
+#include "../core/core.hpp"
+#include "../resp/serializer.hpp"
 
 namespace runtime {
 class DBSession : std::enable_shared_from_this<DBSession> {
@@ -19,7 +19,7 @@ class DBSession : std::enable_shared_from_this<DBSession> {
     response::Serializer serializer{};
 
     boost::asio::awaitable<void> do_read();
-    boost::asio::awaitable<void> do_write(std::string payload) const;
+    boost::asio::awaitable<void> do_write(std::string payload);
 
   public:
     explicit DBSession(boost::asio::ip::tcp::socket sock, core::DBCore& core);
