@@ -20,6 +20,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 
+# set up for CLI 11
+include(FetchContent)
+FetchContent_Declare(
+        cli11
+        GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+        GIT_TAG v2.4.2
+)
+FetchContent_MakeAvailable(cli11)
+
 # set up for gtest
 FetchContent_Declare(
         googletest
@@ -40,14 +49,20 @@ target_include_directories(redis_cpp_lib PUBLIC
         ${Boost_INCLUDE_DIRS}
 )
 
+target_compile_definitions(redis_cpp_lib PUBLIC BOOST_ASIO_HAS_CO_AWAIT)
+
 target_link_libraries(redis_cpp_lib PUBLIC
         spdlog::spdlog
         Boost::system
-        ZLIB::ZLIB)
+        ZLIB::ZLIB
+        CLI11::CLI11
+)
 
 add_executable(main
-        main.cpp
+        src/main.cpp
 )
+
+target_link_libraries(main PRIVATE redis_cpp_lib)
 
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/*.cpp)
 add_executable(redis_cpp_tests

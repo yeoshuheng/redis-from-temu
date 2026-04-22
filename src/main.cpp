@@ -2,8 +2,8 @@
 // Created by Yeo Shu Heng on 22/4/26.
 //
 
-#include "include/commons/CLI11.hpp"
-#include "include/runtime/engine.hpp"
+#include "../include/runtime/engine.hpp"
+#include <CLI/CLI.hpp>
 
 int main(const int argc, char* argv[]) {
     CLI::App app{"redis-from-temu, redis but shittier"};
