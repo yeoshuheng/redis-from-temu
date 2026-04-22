@@ -73,16 +73,27 @@ boost::asio::awaitable<void> DiskManager::disk_loop() {
 };
 
 void DiskManager::start() {
-    state.store(DiskManagerState::RUNNING, std::memory_order_release);
+    if (auto expected = DiskManagerState::STOPPED;
+        !state.compare_exchange_strong(expected, DiskManagerState::RUNNING)) {
+        return;
+    }
+    spdlog::info("starting disk manager...");
     group.spawn(
         disk_ctx, [&]() -> boost::asio::awaitable<void> { co_return co_await disk_loop(); });
     group.spawn(
         disk_ctx, [&]() -> boost::asio::awaitable<void> { co_return co_await beat_loop(); });
-    disk_thread = std::thread([this] { disk_ctx.run(); });
+    disk_thread = std::thread([this] {
+        spdlog::info("disk manager started");
+        disk_ctx.run();
+    });
 };
 
 void DiskManager::shutdown() {
-    state.store(DiskManagerState::STOP_REQUESTED, std::memory_order_release);
+    if (auto expected = DiskManagerState::RUNNING;
+        !state.compare_exchange_strong(expected, DiskManagerState::STOP_REQUESTED)) {
+        return;
+    }
+    spdlog::info("stopping disk manager...");
     group.stop();
     boost::system::error_code err;
     flush_timer.cancel(err);
@@ -95,6 +106,7 @@ void DiskManager::shutdown() {
     }
     wal->flush();
     state.store(DiskManagerState::STOPPED, std::memory_order_release);
+    spdlog::info("disk manager stopped");
 };
 
 } // namespace disk
