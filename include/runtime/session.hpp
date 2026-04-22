@@ -8,11 +8,13 @@
 #include <sys/_types/_u_int64_t.h>
 
 #include "include/command/parser.hpp"
+#include "state.hpp"
 
 namespace runtime {
 struct DBSession {
     u_int64_t id;
     std::shared_ptr<boost::asio::ip::tcp::socket> socket;
+    std::atomic<SessionState> state{SessionState::ACTIVE};
 
     std::string read_buffer{};
     std::string write_buffer{};
