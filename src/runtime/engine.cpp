@@ -15,13 +15,16 @@ void DBEngine::run() {
 void DBEngine::accept_loop() {
     auto sock = std::make_shared<boost::asio::ip::tcp::socket>(ctx);
     accept.async_accept(*sock, [this, sock](const boost::system::error_code& ec) {
+        const auto id = curr_id.fetch_add(1);
         if (!ec) {
-            const auto id = curr_id.fetch_add(1);
             auto session = std::make_unique<DBSession>(id, sock);
             sessions.emplace(id, std::move(session));
             start_read(id);
         } else {
             spdlog::error("failed to accept connection, {}", ec.message());
+            if (sessions.contains(id)) {
+                sessions.erase(id);
+            }
         }
         accept_loop();
     });
