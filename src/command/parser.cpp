@@ -13,8 +13,7 @@ constexpr size_t BUFFER_CLEANUP_LIMIT = 1024;
 
 void Parser::feed(const char* data, const size_t len) {
     buffer.insert(buffer.end(), data, data + len);
-    cache_empty = false;
-    cached_result = {};
+    cache_empty = true;
 }
 
 bool Parser::has_next_msg() {
@@ -43,6 +42,7 @@ ParsedCommandOption Parser::next_msg() {
         spdlog::debug("parsed result: consumed={}, size={}", result.consumed, result.value.size());
     } else {
         result = cached_result;
+        cache_empty = true;
     }
 
     if (result.consumed == 0 || offset + result.consumed > buffer.size()) {

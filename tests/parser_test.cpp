@@ -23,6 +23,7 @@ TEST(ParserTest, BasicSet) {
                  "$3\r\nkey\r\n"
                  "$5\r\nvalue\r\n");
 
+    ASSERT_TRUE(parser.has_next_msg());
     auto cmd_opt = parser.next_msg();
     ASSERT_TRUE(cmd_opt.has_value());
 
@@ -31,7 +32,6 @@ TEST(ParserTest, BasicSet) {
     ASSERT_TRUE(std::holds_alternative<SetCommand>(cmd));
 
     const auto& set = as<SetCommand>(cmd);
-
     EXPECT_EQ(set.key, "key");
 
     ASSERT_TRUE(std::holds_alternative<std::string>(set.value));
@@ -93,22 +93,16 @@ TEST(ParserTest, PartialFeed) {
 
     feed(parser, "*3\r\n$3\r\nSE");
 
-    EXPECT_FALSE(parser.next_msg().has_value());
+    EXPECT_FALSE(parser.has_next_msg());
 
     feed(parser, "T\r\n$3\r\nkey\r\n$5\r\nvalue\r\n");
 
+    ASSERT_TRUE(parser.has_next_msg());
     auto cmd_opt = parser.next_msg();
     ASSERT_TRUE(cmd_opt.has_value());
 
-    const Command& cmd = *cmd_opt;
-
-    ASSERT_TRUE(std::holds_alternative<SetCommand>(cmd));
-
-    const auto& set = as<SetCommand>(cmd);
-
+    const auto& set = as<SetCommand>(*cmd_opt);
     EXPECT_EQ(set.key, "key");
-
-    ASSERT_TRUE(std::holds_alternative<std::string>(set.value));
     EXPECT_EQ(std::get<std::string>(set.value), "value");
 }
 
@@ -118,7 +112,10 @@ TEST(ParserTest, MultipleCommands) {
     feed(parser, "*1\r\n$4\r\nPING\r\n"
                  "*2\r\n$3\r\nGET\r\n$3\r\nkey\r\n");
 
+    ASSERT_TRUE(parser.has_next_msg());
     auto c1 = parser.next_msg();
+
+    ASSERT_TRUE(parser.has_next_msg());
     auto c2 = parser.next_msg();
 
     ASSERT_TRUE(c1.has_value());
@@ -183,10 +180,11 @@ TEST(ParserTest, DrainMultipleMessages) {
                  "*1\r\n$4\r\nPING\r\n");
 
     for (int i = 0; i < 3; i++) {
+        ASSERT_TRUE(parser.has_next_msg());
         auto cmd = parser.next_msg();
         ASSERT_TRUE(cmd.has_value());
         EXPECT_TRUE(std::holds_alternative<PingCommand>(*cmd));
     }
 
-    EXPECT_FALSE(parser.next_msg().has_value());
+    EXPECT_FALSE(parser.has_next_msg());
 }
