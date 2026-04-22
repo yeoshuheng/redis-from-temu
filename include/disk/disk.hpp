@@ -16,7 +16,7 @@ using io_ctx = boost::asio::io_context;
 using timer = boost::asio::steady_timer;
 using wal_ptr = std::shared_ptr<wal::WAL>;
 class DiskManager final : commons::ThreadHeartBeat {
-    io_ctx& ctx;
+    io_ctx disk_ctx;
     wal_ptr wal;
     std::atomic<DiskManagerState> state{DiskManagerState::STOPPED};
     commons::CoroutineGroup group{};
@@ -33,8 +33,8 @@ class DiskManager final : commons::ThreadHeartBeat {
     bool is_beating() const;
 
   public:
-    DiskManager(io_ctx& ctx, const wal_ptr& wal, const commons::heartbeat_state& hb_state,
-        uint32_t flush_interval);
+    DiskManager(
+        const wal_ptr& wal, const commons::heartbeat_state& hb_state, uint32_t flush_interval);
     ~DiskManager() override;
     void start();
     void shutdown();

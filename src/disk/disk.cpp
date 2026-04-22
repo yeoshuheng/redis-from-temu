@@ -4,10 +4,10 @@
 #include "../../include/disk/disk.hpp"
 
 namespace disk {
-DiskManager::DiskManager(io_ctx& ctx, const wal_ptr& wal, const commons::heartbeat_state& hb_state,
-    const uint32_t flush_interval)
-    : ThreadHeartBeat(hb_state), ctx(ctx), wal(wal), flush_timer(ctx), hb_timer(ctx),
-      check_timer(ctx), flush_interval(flush_interval) {};
+DiskManager::DiskManager(
+    const wal_ptr& wal, const commons::heartbeat_state& hb_state, const uint32_t flush_interval)
+    : ThreadHeartBeat(hb_state), wal(wal), flush_timer(disk_ctx), hb_timer(disk_ctx),
+      check_timer(disk_ctx), flush_interval(flush_interval) {};
 
 DiskManager::~DiskManager() {
     shutdown();
@@ -74,8 +74,10 @@ boost::asio::awaitable<void> DiskManager::disk_loop() {
 
 void DiskManager::start() {
     state.store(DiskManagerState::RUNNING, std::memory_order_release);
-    group.spawn(ctx, [&]() -> boost::asio::awaitable<void> { co_return co_await disk_loop(); });
-    group.spawn(ctx, [&]() -> boost::asio::awaitable<void> { co_return co_await beat_loop(); });
+    group.spawn(
+        disk_ctx, [&]() -> boost::asio::awaitable<void> { co_return co_await disk_loop(); });
+    group.spawn(
+        disk_ctx, [&]() -> boost::asio::awaitable<void> { co_return co_await beat_loop(); });
 };
 
 void DiskManager::shutdown() {
