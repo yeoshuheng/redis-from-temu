@@ -40,7 +40,7 @@ class DBEngine {
     void stop();
 
   public:
-    explicit DBEngine(const EngineConfig& config);
+    explicit DBEngine(EngineConfig  config);
     ~DBEngine();
     void start();
 };

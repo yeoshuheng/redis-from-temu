@@ -1,6 +1,8 @@
 //
 // Created by Yeo Shu Heng on 22/4/26.
 //
+#include <utility>
+
 #include "../../include/runtime/engine.hpp"
 #include "../../include/runtime/session.hpp"
 
@@ -65,8 +67,8 @@ boost::asio::awaitable<void> DBEngine::disk_manager_loop() {
     }
 };
 
-DBEngine::DBEngine(const EngineConfig& config)
-    : cfg(config),
+DBEngine::DBEngine(EngineConfig  config)
+    : cfg(std::move(config)),
       accept(ctx, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), cfg.port)),
       disk_check_timer(ctx) {
     accept.set_option(boost::asio::socket_base::reuse_address(true));
@@ -88,16 +90,19 @@ void DBEngine::stop() {
     boost::system::error_code ec;
     accept.close(ec);
     group.stop();
+    spdlog::info("engine stopped");
 };
 
 void DBEngine::start() {
     if (state.exchange(EngineState::RUNNING, std::memory_order_acquire) == EngineState::RUNNING) {
         return;
     }
+    spdlog::info("starting engine...");
     disk->start();
     group.spawn(ctx, [this] { return accept_loop(); });
     group.spawn(ctx, [this] { return term_loop(); });
     group.spawn(ctx, [this] { return disk_manager_loop(); });
+    spdlog::info("engine started...");
     ctx.run();
     group.join();
     disk->shutdown();
