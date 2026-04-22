@@ -40,8 +40,9 @@ class DBEngine {
     boost::asio::awaitable<void> term_loop();
     void stop();
     void recover();
+
   public:
-    explicit DBEngine(EngineConfig  config);
+    explicit DBEngine(EngineConfig config);
     ~DBEngine();
     void start();
 };
