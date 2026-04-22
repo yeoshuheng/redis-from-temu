@@ -13,7 +13,6 @@ namespace commons {
 enum class FailureState { OK = 0, SUSPECTED = 1, FAILED = 2 };
 
 struct ThreadHeartBeatState {
-    std::atomic<uint64_t> core_heartbeat;
     std::atomic<uint64_t> disk_heartbeat;
 };
 using heartbeat_state = std::shared_ptr<ThreadHeartBeatState>;

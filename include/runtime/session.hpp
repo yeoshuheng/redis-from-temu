@@ -5,24 +5,25 @@
 #ifndef SESSION_HPP
 #define SESSION_HPP
 #include <boost/asio/ip/tcp.hpp>
-#include <sys/_types/_u_int64_t.h>
+#include <memory>
 
-#include "include/command/parser.hpp"
-#include "state.hpp"
+#include "include/core/core.hpp"
+#include "include/resp/serializer.hpp"
 
 namespace runtime {
-struct DBSession {
-    u_int64_t id;
-    std::shared_ptr<boost::asio::ip::tcp::socket> socket;
-    std::atomic<SessionState> state{SessionState::ACTIVE};
-
-    std::string read_buffer{};
-    std::string write_buffer{};
+class DBSession : std::enable_shared_from_this<DBSession> {
+    boost::asio::ip::tcp::socket sock;
+    core::DBCore& core;
 
     command::Parser parser{};
+    response::Serializer serializer{};
 
-    DBSession(const u_int64_t id, std::shared_ptr<boost::asio::ip::tcp::socket> socket)
-        : id(id), socket(std::move(socket)) {};
+    boost::asio::awaitable<void> do_read();
+    boost::asio::awaitable<void> do_write(std::string payload) const;
+
+  public:
+    explicit DBSession(boost::asio::ip::tcp::socket sock, core::DBCore& core);
+    boost::asio::awaitable<void> run();
 };
 } // namespace runtime
 
