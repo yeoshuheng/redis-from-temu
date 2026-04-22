@@ -3,7 +3,7 @@
 //
 #include <gtest/gtest.h>
 
-#include "../include/resp/serializer.hpp"
+#include "../../include/resp/serializer.hpp"
 
 using namespace response;
 using response::stored_value;

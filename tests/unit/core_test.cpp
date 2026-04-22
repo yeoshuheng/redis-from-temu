@@ -2,8 +2,8 @@
 #include <gtest/gtest.h>
 #include <thread>
 
-#include "../include/command/command.hpp"
-#include "../include/core/core.hpp"
+#include "../../include/command/command.hpp"
+#include "../../include/core/core.hpp"
 
 using namespace core;
 using response::CoreResp;

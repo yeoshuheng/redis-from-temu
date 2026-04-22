@@ -2,7 +2,7 @@
 // Created by Yeo Shu Heng on 17/4/26.
 //
 
-#include "../include/core/lru_cache.hpp"
+#include "../../include/core/lru_cache.hpp"
 
 #include <chrono>
 #include <gtest/gtest.h>
