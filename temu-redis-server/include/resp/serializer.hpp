@@ -5,7 +5,7 @@
 #ifndef SERIALIZER_HPP
 #define SERIALIZER_HPP
 
-#include "include/core/object.hpp"
+#include "../../include/core/object.hpp"
 #include "resp.hpp"
 #include <string>
 

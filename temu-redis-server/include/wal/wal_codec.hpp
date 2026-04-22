@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "include/command/command.hpp"
+#include "../../include/command/command.hpp"
 
 namespace wal {
 using core::stored_value;

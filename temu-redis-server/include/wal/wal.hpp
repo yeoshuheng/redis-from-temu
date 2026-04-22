@@ -6,7 +6,7 @@
 #define WAL_HPP
 
 #include "../wal/wal_codec.hpp"
-#include "include/command/command.hpp"
+#include "../../include/command/command.hpp"
 #include <functional>
 #include <string>
 

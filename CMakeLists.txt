@@ -39,7 +39,7 @@ set(gtest_force_shared_crt OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # set up for redis-cpp
-file(GLOB_RECURSE CPP_SOURCES CONFIGURE_DEPENDS src/*.cpp)
+file(GLOB_RECURSE CPP_SOURCES CONFIGURE_DEPENDS temu-redis-server/src/*.cpp)
 add_library(redis_cpp_lib
         ${CPP_SOURCES}
 )
@@ -59,12 +59,12 @@ target_link_libraries(redis_cpp_lib PUBLIC
 )
 
 add_executable(main
-        src/main.cpp
+        temu-redis-server/src/main.cpp
 )
 
 target_link_libraries(main PRIVATE redis_cpp_lib)
 
-file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS tests/*.cpp)
+file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS temu-redis-server/tests/*.cpp)
 add_executable(redis_cpp_tests
         ${TEST_SOURCES}
 )

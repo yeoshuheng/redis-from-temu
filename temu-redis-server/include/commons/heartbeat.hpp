@@ -6,8 +6,8 @@
 #define HEARTBEAT_HPP
 #include <atomic>
 
-#include "include/core/core.hpp"
-#include "include/core/lru_cache.hpp"
+#include "../../include/core/core.hpp"
+#include "../../include/core/lru_cache.hpp"
 
 namespace commons {
 enum class FailureState { OK = 0, SUSPECTED = 1, FAILED = 2 };

@@ -6,8 +6,6 @@
 #include "spdlog/spdlog.h"
 #include <zlib.h>
 
-#include "include/resp/resp.hpp"
-
 namespace wal {
 WAL::WAL(const std::string& path) : path(path) {
     // https://en.cppreference.com/w/cpp/io/c/fopen.html
