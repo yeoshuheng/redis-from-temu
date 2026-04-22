@@ -20,8 +20,11 @@ class Parser {
   public:
     void feed(const char* data, size_t len);
     [[nodiscard]] ParsedCommandOption next_msg();
+    [[nodiscard]] bool has_next_msg();
 
   private:
+    ParsedResult cached_result{};
+    bool cache_empty = true;
     std::vector<char> buffer;
     size_t offset = 0;
     [[nodiscard]] ResultOption parse_array(size_t start);

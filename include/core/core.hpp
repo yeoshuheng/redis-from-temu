@@ -32,7 +32,7 @@ class DBCore final {
     DBCore(size_t max_capacity, const wal_ptr& wal, uint32_t ttl_budget);
 
     CoreResp execute(command::Command& cmd);
-    void evict();
+    void evict() const;
 };
 } // namespace core
 

@@ -13,16 +13,37 @@ constexpr size_t BUFFER_CLEANUP_LIMIT = 1024;
 
 void Parser::feed(const char* data, const size_t len) {
     buffer.insert(buffer.end(), data, data + len);
+    cache_empty = false;
+    cached_result = {};
+}
+
+bool Parser::has_next_msg() {
+    if (!cache_empty) {
+        return true;
+    }
+    const ResultOption parsed_result = parse_array(offset);
+    if (!parsed_result.has_value()) {
+        return false;
+    }
+    cache_empty = false;
+    cached_result = parsed_result.value();
+    return true;
 }
 
 ParsedCommandOption Parser::next_msg() {
     spdlog::debug("buffer: {} offset: {}", std::string(buffer.begin(), buffer.end()), offset);
-    const ResultOption parsed_opt = parse_array(offset);
-    if (!parsed_opt.has_value()) {
-        return std::nullopt;
+    ParsedResult result;
+
+    if (cache_empty) {
+        const ResultOption parsed_opt = parse_array(offset);
+        if (!parsed_opt.has_value()) {
+            return std::nullopt;
+        }
+        result = parsed_opt.value();
+        spdlog::debug("parsed result: consumed={}, size={}", result.consumed, result.value.size());
+    } else {
+        result = cached_result;
     }
-    ParsedResult result = parsed_opt.value();
-    spdlog::debug("parsed result: consumed={}, size={}", result.consumed, result.value.size());
 
     if (result.consumed == 0 || offset + result.consumed > buffer.size()) {
         return std::nullopt;

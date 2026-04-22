@@ -54,7 +54,7 @@ void DBCore::persist(const command::Command& cmd) const {
     }
 }
 
-void DBCore::evict() {
+void DBCore::evict() const {
     lru_cache->remove_expired(ttl_budget);
 };
 } // namespace core

@@ -1,0 +1,72 @@
+//
+// Created by Yeo Shu Heng on 22/4/26.
+//
+#include "../../include/runtime/engine.hpp"
+
+namespace runtime {
+DBEngine::DBEngine(const std::string host, uint8_t port, core::DBCore&& core)
+    : accept(ctx, {boost::asio::ip::make_address(std::move(host)), port}), core(std::move(core)) {};
+
+void DBEngine::run() {
+    accept_loop();
+    ctx.run();
+};
+
+void DBEngine::accept_loop() {
+    auto sock = std::make_shared<boost::asio::ip::tcp::socket>(ctx);
+    accept.async_accept(*sock, [this, sock](const boost::system::error_code& ec) {
+        if (!ec) {
+            const auto id = curr_id.fetch_add(1);
+            auto session = std::make_unique<DBSession>(id, sock);
+            sessions.emplace(id, std::move(session));
+            start_read(id);
+        } else {
+            spdlog::error("failed to accept connection, {}", ec.message());
+        }
+        accept_loop();
+    });
+}
+
+void DBEngine::start_write(session_id id) {
+    const auto& session = sessions.at(id);
+    boost::asio::async_write(session->socket, boost::asio::buffer(session->write_buffer),
+        [this, id](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+            if (ec) {
+                sessions.erase(id);
+                spdlog::error("failed to write to session with id={}, {}", id, ec.message());
+                return;
+            }
+            const auto& s = sessions.at(id);
+            s->write_buffer.clear();
+        });
+};
+
+void DBEngine::start_read(session_id id) {
+    const auto& session = sessions.at(id);
+    session->socket->async_read_some(boost::asio::buffer(session->read_buffer),
+        [this, id](const boost::system::error_code& ec, const std::size_t bytes_transferred) {
+            if (ec) {
+                spdlog::error("failed to read from session with id={}, {}", id, ec.message());
+                sessions.erase(id);
+                return;
+            }
+            const auto& s = sessions.at(id);
+            s->parser.feed(s->read_buffer.data(), bytes_transferred);
+            while (s->parser.has_next_msg()) {
+                const auto cmd_opt = s->parser.next_msg();
+                if (!cmd_opt.has_value()) {
+                    continue;
+                }
+                command::Command cmd = cmd_opt.value();
+                const auto result = core.execute(cmd);
+                s->write_buffer.append(std::move(serializer.serialize(result)));
+            }
+
+            if (!s->write_buffer.empty()) {
+                start_write(id);
+            } else {
+                start_read(id);
+            }
+        });
+}
+} // namespace runtime
