@@ -23,6 +23,8 @@ class DBEngine {
     acceptor accept;
     std::unordered_map<session_id, std::shared_ptr<DBSession>> sessions;
 
+    boost::asio::signal_set signals;
+
     std::atomic<session_id> curr_id{0};
 
     std::unique_ptr<core::DBCore> core;
@@ -31,16 +33,17 @@ class DBEngine {
     std::atomic<EngineState> state{EngineState::STOPPED};
     response::Serializer serializer{};
 
+    void termination_listener_loop();
     void accept_loop();
     void start_read(session_id id);
     void start_write(session_id id);
     void end_session(session_id id);
+    void close();
 
   public:
     DBEngine(const std::string& host, uint8_t port, std::unique_ptr<core::DBCore> core,
         std::unique_ptr<disk::DiskManager> disk_manager);
     void run();
-    void close();
 };
 } // namespace runtime
 

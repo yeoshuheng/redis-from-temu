@@ -9,7 +9,7 @@ namespace runtime {
 DBEngine::DBEngine(const std::string& host, uint8_t port, std::unique_ptr<core::DBCore> core,
     std::unique_ptr<disk::DiskManager> disk_manager)
     : accept(core_ctx, {boost::asio::ip::make_address(std::move(host)), port}),
-      core(std::move(core)), disk_manager(std::move(disk_manager)) {};
+      signals(core_ctx, SIGINT, SIGTERM), core(std::move(core)), disk_manager(std::move(disk_manager)) {};
 
 void DBEngine::run() {
     if (auto expected = EngineState::STOPPED;
@@ -17,6 +17,7 @@ void DBEngine::run() {
         return;
     }
     disk_manager->start();
+    termination_listener_loop();
     accept_loop();
     core_ctx.run();
 };
@@ -34,7 +35,16 @@ void DBEngine::close() {
     core_ctx.stop();
     disk_manager->shutdown();
     state.store(EngineState::STOPPED, std::memory_order_release);
-}
+};
+
+void DBEngine::termination_listener_loop() {
+    signals.async_wait([this](const boost::system::error_code& ec, int signal) {
+        if (ec) return;
+        spdlog::info("received signal {}", signal);
+        boost::asio::post(core_ctx, [this] {this->close();});
+    });
+};
+
 
 void DBEngine::accept_loop() {
     if (state.load(std::memory_order_acquire) != EngineState::RUNNING) {
